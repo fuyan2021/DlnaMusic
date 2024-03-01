@@ -28,7 +28,9 @@ public abstract class Descriptor {
 
         public static final String NAMESPACE_URI = "urn:schemas-upnp-org:device-1-0";
         public static final String DLNA_NAMESPACE_URI = "urn:schemas-dlna-org:device-1-0";
+        public static final String QPLAY_NAMESPACE_URI = "http://www.tencent.com";
         public static final String DLNA_PREFIX = "dlna";
+        public static final String QPLAY = "qq";
         public static final String SEC_NAMESPACE_URI = "http://www.sec.co.kr/dlna";
         public static final String SEC_PREFIX = "sec";
 
@@ -44,6 +46,8 @@ public abstract class Descriptor {
             X_ProductCap,
             deviceType,
             friendlyName,
+            X_QPlay_SoftwareCapability,
+
             manufacturer,
             manufacturerURL,
             modelDescription,

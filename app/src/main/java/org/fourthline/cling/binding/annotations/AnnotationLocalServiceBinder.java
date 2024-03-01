@@ -66,13 +66,13 @@ public class AnnotationLocalServiceBinder implements LocalServiceBinder {
             UpnpService annotation = clazz.getAnnotation(UpnpService.class);
             UpnpServiceId idAnnotation = annotation.serviceId();
             UpnpServiceType typeAnnotation = annotation.serviceType();
-
-            ServiceId serviceId = idAnnotation.namespace().equals(UDAServiceId.DEFAULT_NAMESPACE)
-                    ? new UDAServiceId(idAnnotation.value())
+            boolean isQPlay = idAnnotation.namespace().equals(UDAServiceId.QPLAY_NAMESPACE);
+            ServiceId serviceId = idAnnotation.namespace().equals(UDAServiceId.DEFAULT_NAMESPACE)||isQPlay
+                    ? new UDAServiceId(idAnnotation.value(),isQPlay)
                     : new ServiceId(idAnnotation.namespace(), idAnnotation.value());
 
-            ServiceType serviceType = typeAnnotation.namespace().equals(UDAServiceType.DEFAULT_NAMESPACE)
-                    ? new UDAServiceType(typeAnnotation.value(), typeAnnotation.version())
+            ServiceType serviceType = typeAnnotation.namespace().equals(UDAServiceType.DEFAULT_NAMESPACE)||isQPlay
+                    ? new UDAServiceType(typeAnnotation.value(), typeAnnotation.version(),isQPlay)
                     : new ServiceType(typeAnnotation.namespace(), typeAnnotation.value(), typeAnnotation.version());
 
             boolean supportsQueryStateVariables = annotation.supportsQueryStateVariables();

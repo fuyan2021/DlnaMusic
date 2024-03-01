@@ -46,6 +46,16 @@ public class LocalService<T> extends Service<LocalDevice, LocalService> {
 
     protected ServiceManager manager;
 
+    public String getQPlay() {
+        return qPlay;
+    }
+
+    public void setQPlay(String qPlay) {
+        this.qPlay = qPlay;
+    }
+
+    protected String qPlay;
+
     public LocalService(ServiceType serviceType, ServiceId serviceId,
                         Action[] actions, StateVariable[] stateVariables) throws ValidationException {
         super(serviceType, serviceId, actions, stateVariables);

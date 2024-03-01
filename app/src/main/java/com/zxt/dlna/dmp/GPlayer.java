@@ -117,6 +117,8 @@ public class GPlayer extends Activity implements OnCompletionListener, OnErrorLi
 
     private Button mRightButton;
 
+    private ImageButton mNext;
+
     private ImageView mSound;
 
     private SeekBar mSeekBarSound;
@@ -141,6 +143,9 @@ public class GPlayer extends Activity implements OnCompletionListener, OnErrorLi
         surfaceHolder = surfaceView.getHolder();
         surfaceHolder.addCallback(this);
         surfaceHolder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
+
+        mNext = (ImageButton) findViewById(R.id.next);
+        mNext.setOnClickListener(this);
 
         mMediaPlayer = new MediaPlayer();
 
@@ -255,7 +260,7 @@ public class GPlayer extends Activity implements OnCompletionListener, OnErrorLi
     @Override
     protected void onNewIntent(Intent intent) {
         playURI = intent.getStringExtra("playURI");
-        if (!TextUtils.isEmpty(playURI)) {
+        if (!TextUtils.isEmpty(playURI)&&mMediaPlayer!=null) {
             setUri(playURI);
         }
         setTitle(intent);
@@ -317,7 +322,6 @@ public class GPlayer extends Activity implements OnCompletionListener, OnErrorLi
         switch (id) {
             case R.id.topBar_back:
                 exit();
-
                 break;
             case R.id.sound:
                 isMute = !isMute;
@@ -624,6 +628,7 @@ public class GPlayer extends Activity implements OnCompletionListener, OnErrorLi
                 }
                 case MEDIA_PLAYER_PROGRESS_UPDATE: {
                     if (null == mMediaPlayer || !mMediaPlayer.isPlaying()) {
+                        mHandler.removeCallbacksAndMessages(MEDIA_PLAYER_BUFFERING_UPDATE);
                         break;
                     }
 
@@ -649,6 +654,12 @@ public class GPlayer extends Activity implements OnCompletionListener, OnErrorLi
                 case MEDIA_PLAYER_VOLUME_CHANGED: {
                     mSeekBarSound.setProgress(mAudioManager
                             .getStreamVolume(AudioManager.STREAM_MUSIC));
+                    int position = mMediaPlayer.getCurrentPosition();
+                    int duration = mMediaPlayer.getDuration();
+                    if (null != mMediaListener) {
+                        mMediaListener.positionChanged(position);
+                        mMediaListener.durationChanged(duration);
+                    }
                     break;
                 }
                 case MEDIA_PLAYER_HIDDEN_CONTROL: {
@@ -679,7 +690,7 @@ public class GPlayer extends Activity implements OnCompletionListener, OnErrorLi
         public void onReceive(Context context, Intent intent) {
             String action = intent.getAction();
             String str1 = intent.getStringExtra("helpAction");
-
+            Log.d("BroadcastReceiver", "onReceive: "+str1);
             if (str1.equals(Action.PLAY)) {
                 start();
                 updatePausePlay();

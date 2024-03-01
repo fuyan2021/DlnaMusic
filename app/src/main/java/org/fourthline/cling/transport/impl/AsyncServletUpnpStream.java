@@ -15,6 +15,8 @@
 
 package org.fourthline.cling.transport.impl;
 
+import android.util.Log;
+
 import org.fourthline.cling.model.message.Connection;
 import org.fourthline.cling.model.message.StreamRequestMessage;
 import org.fourthline.cling.model.message.StreamResponseMessage;
@@ -101,7 +103,8 @@ public abstract class AsyncServletUpnpStream extends UpnpStream implements Async
                 log.finer("Processing new request message: " + requestMessage);
 
             responseMessage = process(requestMessage);
-
+            Log.d("AsyncServletUpnpStream", "requestMessage: "+requestMessage.getBodyString());
+            Log.d("AsyncServletUpnpStream", "responseMessage: "+responseMessage.getBodyString());
             if (responseMessage != null) {
                 if (log.isLoggable(Level.FINER))
                     log.finer("Preparing HTTP response message: " + responseMessage);

@@ -28,11 +28,12 @@ import java.util.regex.Matcher;
 public class UDAServiceType extends ServiceType {
 
     public static final String DEFAULT_NAMESPACE = "schemas-upnp-org";
+    public static final String BROKEN_QPLAY_NAMESPACE = "schemas-tencent-com"; // TODO: UPNP VIOLATION: Intel UPnP tools!
 
     // This pattern also accepts decimal versions, not only integers (as would be required by UDA), but cuts off fractions
     public static final Pattern PATTERN =
             Pattern.compile("urn:" + DEFAULT_NAMESPACE + ":service:(" + Constants.REGEX_TYPE + "):([0-9]+).*");
-
+    private boolean isQPlay = false;
     public UDAServiceType(String type) {
         this(type, 1);
     }
@@ -40,6 +41,13 @@ public class UDAServiceType extends ServiceType {
     public UDAServiceType(String type, int version) {
         super(DEFAULT_NAMESPACE, type, version);
     }
+
+      public UDAServiceType(String type, int version,boolean isQPlay) {
+        super(isQPlay?BROKEN_QPLAY_NAMESPACE:DEFAULT_NAMESPACE, type, version);
+        this.isQPlay = isQPlay;
+    }
+
+
 
     public static UDAServiceType valueOf(String s) throws InvalidValueException {
         Matcher matcher = UDAServiceType.PATTERN.matcher(s);

@@ -15,6 +15,8 @@
 
 package org.fourthline.cling.support.avtransport;
 
+import android.util.Log;
+
 import org.fourthline.cling.binding.annotations.UpnpAction;
 import org.fourthline.cling.binding.annotations.UpnpInputArgument;
 import org.fourthline.cling.binding.annotations.UpnpOutputArgument;
@@ -225,7 +227,6 @@ public abstract class AbstractAVTransportService implements LastChangeDelegator 
 
     @Override
     public void appendCurrentState(LastChange lc, UnsignedIntegerFourBytes instanceId) throws Exception {
-
         MediaInfo mediaInfo = getMediaInfo(instanceId);
         TransportInfo transportInfo = getTransportInfo(instanceId);
         TransportSettings transportSettings = getTransportSettings(instanceId);

@@ -2,12 +2,15 @@
 package com.zxt.dlna.dmr;
 
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.logging.Logger;
 
 import org.fourthline.cling.model.ModelUtil;
+import org.fourthline.cling.model.types.UDAServiceId;
 import org.fourthline.cling.model.types.UnsignedIntegerFourBytes;
 import org.fourthline.cling.support.avtransport.lastchange.AVTransportVariable;
 import org.fourthline.cling.support.lastchange.LastChange;
+import org.fourthline.cling.support.model.AVTransport;
 import org.fourthline.cling.support.model.Channel;
 import org.fourthline.cling.support.model.MediaInfo;
 import org.fourthline.cling.support.model.PositionInfo;
@@ -15,10 +18,13 @@ import org.fourthline.cling.support.model.StorageMedium;
 import org.fourthline.cling.support.model.TransportAction;
 import org.fourthline.cling.support.model.TransportInfo;
 import org.fourthline.cling.support.model.TransportState;
+import org.fourthline.cling.support.qplay.TrackMetaData;
+import org.fourthline.cling.support.qplay.TracksMetaData;
 import org.fourthline.cling.support.renderingcontrol.lastchange.ChannelMute;
 import org.fourthline.cling.support.renderingcontrol.lastchange.ChannelVolume;
 import org.fourthline.cling.support.renderingcontrol.lastchange.RenderingControlVariable;
 
+import com.google.gson.Gson;
 import com.zxt.dlna.dmp.GPlayer;
 import com.zxt.dlna.dmp.GPlayer.MediaListener;
 import com.zxt.dlna.util.Action;
@@ -38,7 +44,9 @@ public class ZxtMediaPlayer {
 
     private static final String TAG = "GstMediaPlayer";
 
-    final private UnsignedIntegerFourBytes instanceId;
+    private final String maxTracks = "100";
+
+    public static UnsignedIntegerFourBytes instanceId;
     final private LastChange avTransportLastChange;
     final private LastChange renderingControlLastChange;
 
@@ -48,6 +56,8 @@ public class ZxtMediaPlayer {
     private volatile TransportInfo currentTransportInfo = new TransportInfo();
     private PositionInfo currentPositionInfo = new PositionInfo();
     private MediaInfo currentMediaInfo = new MediaInfo();
+
+    private TrackMetaData trackMetaData = new TrackMetaData(new ArrayList<>());
     private double storedVolume;
     
     private Context mContext;
@@ -56,7 +66,7 @@ public class ZxtMediaPlayer {
                           LastChange avTransportLastChange,
                           LastChange renderingControlLastChange) {
         super();
-        this.instanceId = instanceId;
+        ZxtMediaPlayer.instanceId = instanceId;
         this.mContext = context;
         this.avTransportLastChange = avTransportLastChange;
         this.renderingControlLastChange = renderingControlLastChange;
@@ -84,6 +94,16 @@ public class ZxtMediaPlayer {
 //        setVideoSink(videoComponent.getElement());
     }
 
+    public TrackMetaData getTrackMetaData(){
+        return trackMetaData;
+    }
+
+    public void setTrackMetaData(TrackMetaData data){
+        this.trackMetaData = data;
+    }
+    public String getMaxTracks(){
+        return this.maxTracks;
+    }
     public UnsignedIntegerFourBytes getInstanceId() {
         return instanceId;
     }
@@ -135,8 +155,8 @@ public class ZxtMediaPlayer {
    // @Override
     synchronized public void setURI(URI uri, String type, String name, String currentURIMetaData) {
         Log.i(TAG, "setURI " + uri);
-
         currentMediaInfo = new MediaInfo(uri.toString(),currentURIMetaData);
+        Log.i(TAG, "currentMediaInfo " + currentMediaInfo);
         currentPositionInfo = new PositionInfo(1, "", uri.toString());
 
         getAvTransportLastChange().setEventedValue(getInstanceId(),
@@ -147,6 +167,28 @@ public class ZxtMediaPlayer {
         
         GPlayer.setMediaListener(new GstMediaListener());
         
+        Intent intent = new Intent();
+        intent.setClass(mContext, RenderPlayerService.class);
+        intent.putExtra("type", type);
+        intent.putExtra("name", name);
+        intent.putExtra("playURI", uri.toString());
+        mContext.startService(intent);
+    }
+    synchronized public void setQPlayURI(URI uri, String type, String name, String trackMetaData) {
+        Log.i(TAG, "setURI " + uri);
+
+        currentPositionInfo = new PositionInfo(1,"", uri.toString());
+        Gson gson = new Gson();
+        TrackMetaData trackMetaData1 = gson.fromJson(trackMetaData, TrackMetaData.class);
+        setTrackMetaData(trackMetaData1);
+        getAvTransportLastChange().setEventedValue(getInstanceId(),
+                new AVTransportVariable.AVTransportURI(uri),
+                new AVTransportVariable.CurrentTrackURI(uri));
+
+        transportStateChanged(TransportState.STOPPED);
+
+        GPlayer.setMediaListener(new GstMediaListener());
+
         Intent intent = new Intent();
         intent.setClass(mContext, RenderPlayerService.class);
         intent.putExtra("type", type);
@@ -281,6 +323,7 @@ public class ZxtMediaPlayer {
 */
     synchronized protected void transportStateChanged(TransportState newState) {
         TransportState currentTransportState = currentTransportInfo.getCurrentTransportState();
+        Log.d(TAG, "transportStateChanged: "+newState);
         log.fine("Current state is: " + currentTransportState + ", changing to new state: " + newState);
         currentTransportInfo = new TransportInfo(newState);
 

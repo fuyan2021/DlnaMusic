@@ -30,21 +30,28 @@ import java.util.regex.Matcher;
  * @author Christian Bauer
  */
 public class UDAServiceId extends ServiceId {
-	
-	private static Logger log = Logger.getLogger(UDAServiceId.class.getName());
+
+    private static Logger log = Logger.getLogger(UDAServiceId.class.getName());
 
     public static final String DEFAULT_NAMESPACE = "upnp-org";
+    public static final String QPLAY_NAMESPACE = "tencent-com";
     public static final String BROKEN_DEFAULT_NAMESPACE = "schemas-upnp-org"; // TODO: UPNP VIOLATION: Intel UPnP tools!
+    public static final String BROKEN_QPLAY_NAMESPACE = "schemas-tencent-com"; // TODO: UPNP VIOLATION: Intel UPnP tools!
 
     public static final Pattern PATTERN =
-            Pattern.compile("urn:" + DEFAULT_NAMESPACE + ":serviceId:(" + Constants.REGEX_ID+ ")");
+            Pattern.compile("urn:" + DEFAULT_NAMESPACE + ":serviceId:(" + Constants.REGEX_ID + ")");
 
-     // Note: 'service' vs. 'serviceId'
+    // Note: 'service' vs. 'serviceId'
     public static final Pattern BROKEN_PATTERN =
-            Pattern.compile("urn:" + BROKEN_DEFAULT_NAMESPACE + ":service:(" + Constants.REGEX_ID+ ")");
-
+            Pattern.compile("urn:" + BROKEN_DEFAULT_NAMESPACE + ":service:(" + Constants.REGEX_ID + ")");
+    private boolean isQPlay =false;
     public UDAServiceId(String id) {
         super(DEFAULT_NAMESPACE, id);
+    }
+
+    public UDAServiceId(String id, boolean isQQ) {
+        super(isQQ?QPLAY_NAMESPACE:DEFAULT_NAMESPACE, id);
+        this.isQPlay = isQQ;
     }
 
     public static UDAServiceId valueOf(String s) throws InvalidValueException {
@@ -66,10 +73,10 @@ public class UDAServiceId extends ServiceId {
         }
 
         // Some devices just set the last token of the Service ID, e.g. 'ContentDirectory'
-        if("ContentDirectory".equals(s) ||
-           "ConnectionManager".equals(s) ||
-           "RenderingControl".equals(s) ||
-           "AVTransport".equals(s)) {
+        if ("ContentDirectory".equals(s) ||
+                "ConnectionManager".equals(s) ||
+                "RenderingControl".equals(s) ||
+                "AVTransport".equals(s)) {
             log.warning("UPnP specification violation, fixing broken Service ID: " + s);
             return new UDAServiceId(s);
         }

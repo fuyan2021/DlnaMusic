@@ -31,6 +31,9 @@ import android.content.Context;
 import android.util.Log;
 
 import com.zxt.dlna.activity.SettingActivity;
+
+import org.fourthline.cling.support.qplay.DmrQPlayService;
+
 import com.zxt.dlna.util.FileUtil;
 import com.zxt.dlna.util.UpnpUtil;
 import com.zxt.dlna.util.Utils;
@@ -53,12 +56,14 @@ public class ZxtMediaRenderer {
     final protected LastChangeAwareServiceManager<AVTransportService> avTransport;
     final protected LastChangeAwareServiceManager<AudioRenderingControl> renderingControl;
 
+    final protected ServiceManager<DmrQPlayService> qPlayServiceServiceManager;
+
     final protected LocalDevice device;
 
-   protected  Context mContext;
+    protected Context mContext;
 
-    public ZxtMediaRenderer(int numberOfPlayers,Context context) {
-         mContext = context;
+    public ZxtMediaRenderer(int numberOfPlayers, Context context) {
+        mContext = context;
 
         // This is the backend which manages the actual player instances
         mediaPlayers = new ZxtMediaPlayers(
@@ -79,6 +84,24 @@ public class ZxtMediaRenderer {
             }
         };
 
+        /**
+         * QPlay服务
+         * */
+        LocalService qPlayService = binder.read(DmrQPlayService.class);
+        qPlayService.setQPlay("QPlay");
+        qPlayServiceServiceManager =
+                new DefaultServiceManager<DmrQPlayService>(qPlayService) {
+                    @Override
+                    protected DmrQPlayService createServiceInstance() throws Exception {
+                        return new DmrQPlayService(mediaPlayers);
+                    }
+                };
+        qPlayService.setManager(qPlayServiceServiceManager);
+        // 添加 QPlay 服务到设备中
+
+        /**
+         * ConnectionManager 服务
+         * */
         // The connection manager doesn't have to do much, HTTP is stateless
         LocalService connectionManagerService = binder.read(ZxtConnectionManagerService.class);
         connectionManager =
@@ -89,8 +112,11 @@ public class ZxtMediaRenderer {
                     }
                 };
         connectionManagerService.setManager(connectionManager);
-
         // The AVTransport just passes the calls on to the backend players
+
+        /**
+         * AVTransport 服务
+         * */
         LocalService<AVTransportService> avTransportService = binder.read(AVTransportService.class);
         avTransport =
                 new LastChangeAwareServiceManager<AVTransportService>(
@@ -104,6 +130,9 @@ public class ZxtMediaRenderer {
                 };
         avTransportService.setManager(avTransport);
 
+        /**
+         * RenderingControl 服务
+         * */
         // The Rendering Control just passes the calls on to the backend players
         LocalService<AudioRenderingControl> renderingControlService = binder.read(AudioRenderingControl.class);
         renderingControl =
@@ -118,8 +147,9 @@ public class ZxtMediaRenderer {
                 };
         renderingControlService.setManager(renderingControl);
 
+
         try {
-            UDN  udn = UpnpUtil.uniqueSystemIdentifier("msidmr");
+            UDN udn = UpnpUtil.uniqueSystemIdentifier("msidmr");
 
             device = new LocalDevice(
                     //TODO zxt
@@ -127,23 +157,24 @@ public class ZxtMediaRenderer {
                     new DeviceIdentity(udn),
                     new UDADeviceType("MediaRenderer", 1),
                     new DeviceDetails(
-                             SettingActivity.getRenderName(context) + " (" + android.os.Build.MODEL + ")",
+                            SettingActivity.getRenderName(context) + " (" + android.os.Build.MODEL + ")",
                             new ManufacturerDetails(Utils.MANUFACTURER),
                             new ModelDetails(Utils.DMR_NAME, Utils.DMR_DESC, "1", Utils.DMR_MODEL_URL),
-                            new DLNADoc[] {
-                                new DLNADoc("DMR", DLNADoc.Version.V1_5)
-                            }, new DLNACaps(new String[] {
-                                 "av-upload", "image-upload", "audio-upload"
-                            })
+                            new DLNADoc[]{
+                                    new DLNADoc("DMR", DLNADoc.Version.V1_5)
+                            }, new DLNACaps(new String[]{
+                            "av-upload", "image-upload", "audio-upload"
+                    })
                     ),
                     new Icon[]{createDefaultDeviceIcon()},
                     new LocalService[]{
                             avTransportService,
                             renderingControlService,
+                            qPlayService,
                             connectionManagerService
                     }
             );
-            Log.i(TAG,  "getType: " +  device.getType().toString());
+            Log.i(TAG, "getType: " + device.getType().toString());
         } catch (ValidationException ex) {
             throw new RuntimeException(ex);
         }
@@ -185,7 +216,7 @@ public class ZxtMediaRenderer {
     synchronized public void stopAllMediaPlayers() {
         for (ZxtMediaPlayer mediaPlayer : mediaPlayers.values()) {
             TransportState state =
-                mediaPlayer.getCurrentTransportInfo().getCurrentTransportState();
+                    mediaPlayer.getCurrentTransportInfo().getCurrentTransportState();
             if (!state.equals(TransportState.NO_MEDIA_PRESENT) ||
                     state.equals(TransportState.STOPPED)) {
                 Log.i(TAG, "Stopping player instance: " + mediaPlayer.getInstanceId());

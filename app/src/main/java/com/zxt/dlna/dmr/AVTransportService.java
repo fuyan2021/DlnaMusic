@@ -35,12 +35,14 @@ public class AVTransportService extends AbstractAVTransportService {
     final private static Logger log = Logger.getLogger(AVTransportService.class.getName());
 
     private static final String TAG = "GstAVTransportService";
+    private String queueID = "";
 
     final private Map<UnsignedIntegerFourBytes, ZxtMediaPlayer> players;
 
     protected AVTransportService(LastChange lastChange, Map<UnsignedIntegerFourBytes, ZxtMediaPlayer> players) {
         super(lastChange);
         this.players = players;
+        Log.d(TAG, "AVTransportService: init");
     }
 
     protected Map<UnsignedIntegerFourBytes, ZxtMediaPlayer> getPlayers() {
@@ -60,6 +62,20 @@ public class AVTransportService extends AbstractAVTransportService {
                                   String currentURI,
                                   String currentURIMetaData) throws AVTransportException {
         Log.d(TAG, currentURI + "---" +currentURIMetaData );
+
+        /**
+         * QPlay处理
+         * */
+        try {
+            if (currentURI.startsWith("qplay://")){
+                queueID = currentURI.replace("qplay://","");
+                return;
+            }
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+
+
         URI uri;
         try {
             uri = new URI(currentURI);
@@ -69,19 +85,19 @@ public class AVTransportService extends AbstractAVTransportService {
             );
         }
 
-        if (currentURI.startsWith("http:")) {
-            try {
-                HttpFetch.validate(URIUtil.toURL(uri));
-            } catch (Exception ex) {
-                throw new AVTransportException(
-                        AVTransportErrorCode.RESOURCE_NOT_FOUND, ex.getMessage()
-                );
-            }
-        } else if (!currentURI.startsWith("file:")) {
-            throw new AVTransportException(
-                    ErrorCode.INVALID_ARGS, "Only HTTP and file: resource identifiers are supported"
-            );
-        }
+//        if (currentURI.startsWith("http:")) {
+//            try {
+//                HttpFetch.validate(URIUtil.toURL(uri));
+//            } catch (Exception ex) {
+//                throw new AVTransportException(
+//                        AVTransportErrorCode.RESOURCE_NOT_FOUND, ex.getMessage()
+//                );
+//            }
+//        } else if (!currentURI.startsWith("file:")) {
+//            throw new AVTransportException(
+//                    ErrorCode.INVALID_ARGS, "Only HTTP and file: resource identifiers are supported"
+//            );
+//        }
 
         // TODO: Check mime type of resource against supported types
         // TODO: DIDL fragment parsing and handling of currentURIMetaData
@@ -102,43 +118,51 @@ public class AVTransportService extends AbstractAVTransportService {
 
     @Override
     public MediaInfo getMediaInfo(UnsignedIntegerFourBytes instanceId) throws AVTransportException {
+        Log.d(TAG, "getMediaInfo: ");
         return getInstance(instanceId).getCurrentMediaInfo();
     }
 
     @Override
     public TransportInfo getTransportInfo(UnsignedIntegerFourBytes instanceId) throws AVTransportException {
+        Log.d(TAG, "getTransportInfo: ");
         return getInstance(instanceId).getCurrentTransportInfo();
     }
 
     @Override
     public PositionInfo getPositionInfo(UnsignedIntegerFourBytes instanceId) throws AVTransportException {
+        Log.d(TAG, "getPositionInfo: ");
         return getInstance(instanceId).getCurrentPositionInfo();
     }
 
     @Override
     public DeviceCapabilities getDeviceCapabilities(UnsignedIntegerFourBytes instanceId) throws AVTransportException {
         getInstance(instanceId);
+        Log.d(TAG, "getDeviceCapabilities: ");
         return new DeviceCapabilities(new StorageMedium[]{StorageMedium.NETWORK});
     }
 
     @Override
     public TransportSettings getTransportSettings(UnsignedIntegerFourBytes instanceId) throws AVTransportException {
         getInstance(instanceId);
+        Log.d(TAG, "getTransportSettings: ");
         return new TransportSettings(PlayMode.NORMAL);
     }
 
     @Override
     public void stop(UnsignedIntegerFourBytes instanceId) throws AVTransportException {
+        Log.d(TAG, "stop: ");
         getInstance(instanceId).stop();
     }
 
     @Override
     public void play(UnsignedIntegerFourBytes instanceId, String speed) throws AVTransportException {
+        Log.d(TAG, "play: ");
         getInstance(instanceId).play();
     }
 
     @Override
     public void pause(UnsignedIntegerFourBytes instanceId) throws AVTransportException {
+        Log.d(TAG, "pause: ");
         getInstance(instanceId).pause();
     }
 
@@ -151,6 +175,7 @@ public class AVTransportService extends AbstractAVTransportService {
     @Override
     public void seek(UnsignedIntegerFourBytes instanceId, String unit, String target) throws AVTransportException {
         final ZxtMediaPlayer player = getInstance(instanceId);
+        Log.d(TAG, "seek: ");
         SeekMode seekMode;
         try {
             seekMode = SeekMode.valueOrExceptionOf(unit);
@@ -182,12 +207,14 @@ public class AVTransportService extends AbstractAVTransportService {
 
     @Override
     public void next(UnsignedIntegerFourBytes instanceId) throws AVTransportException {
+        Log.d(TAG, "next: ");
         // Not implemented
         log.info("### TODO: Not implemented: Next");
     }
 
     @Override
     public void previous(UnsignedIntegerFourBytes instanceId) throws AVTransportException {
+        Log.d(TAG, "previous: ");
         // Not implemented
         log.info("### TODO: Not implemented: Previous");
     }
@@ -197,6 +224,7 @@ public class AVTransportService extends AbstractAVTransportService {
                                       String nextURI,
                                       String nextURIMetaData) throws AVTransportException {
         log.info("### TODO: Not implemented: SetNextAVTransportURI");
+        Log.d(TAG, "setNextAVTransportURI: ");
         // Not implemented
     }
 
@@ -204,6 +232,7 @@ public class AVTransportService extends AbstractAVTransportService {
     public void setPlayMode(UnsignedIntegerFourBytes instanceId, String newPlayMode) throws AVTransportException {
         // Not implemented
         log.info("### TODO: Not implemented: SetPlayMode");
+        Log.d(TAG, "setPlayMode: ");
     }
 
     @Override

@@ -425,6 +425,15 @@ public class UDA10DeviceDescriptorBinderImpl implements DeviceDescriptorBinder, 
                 descriptor, deviceElement, ELEMENT.friendlyName,
                 deviceModelDetails.getFriendlyName()
         );
+
+        /**
+         * QPLAY
+         * */
+        appendNewElementIfNotNull(
+                descriptor, deviceElement, Descriptor.Device.QPLAY + ":" + ELEMENT.X_QPlay_SoftwareCapability,
+                "QPlay:2",Descriptor.Device.QPLAY_NAMESPACE_URI
+        );
+
         if (deviceModelDetails.getManufacturerDetails() != null) {
             appendNewElementIfNotNull(
                     descriptor, deviceElement, ELEMENT.manufacturer,
@@ -479,12 +488,12 @@ public class UDA10DeviceDescriptorBinderImpl implements DeviceDescriptorBinder, 
                 descriptor, deviceElement, Descriptor.Device.DLNA_PREFIX + ":" + ELEMENT.X_DLNACAP,
                 deviceModelDetails.getDlnaCaps(), Descriptor.Device.DLNA_NAMESPACE_URI
         );
-        
+
         appendNewElementIfNotNull(
                 descriptor, deviceElement, Descriptor.Device.SEC_PREFIX + ":" + ELEMENT.ProductCap,
                 deviceModelDetails.getSecProductCaps(), Descriptor.Device.SEC_NAMESPACE_URI
         );
-        
+
         appendNewElementIfNotNull(
                 descriptor, deviceElement, Descriptor.Device.SEC_PREFIX + ":" + ELEMENT.X_ProductCap,
                 deviceModelDetails.getSecProductCaps(), Descriptor.Device.SEC_NAMESPACE_URI
@@ -508,9 +517,9 @@ public class UDA10DeviceDescriptorBinderImpl implements DeviceDescriptorBinder, 
             appendNewElementIfNotNull(descriptor, iconElement, ELEMENT.height, icon.getHeight());
             appendNewElementIfNotNull(descriptor, iconElement, ELEMENT.depth, icon.getDepth());
             if (deviceModel instanceof RemoteDevice) {
-            	appendNewElementIfNotNull(descriptor, iconElement, ELEMENT.url,  icon.getUri());
+                appendNewElementIfNotNull(descriptor, iconElement, ELEMENT.url, icon.getUri());
             } else if (deviceModel instanceof LocalDevice) {
-            	appendNewElementIfNotNull(descriptor, iconElement, ELEMENT.url,  namespace.getIconPath(icon));
+                appendNewElementIfNotNull(descriptor, iconElement, ELEMENT.url, namespace.getIconPath(icon));
             }
         }
     }
@@ -522,19 +531,18 @@ public class UDA10DeviceDescriptorBinderImpl implements DeviceDescriptorBinder, 
 
         for (Service service : deviceModel.getServices()) {
             Element serviceElement = appendNewElement(descriptor, serviceListElement, ELEMENT.service);
-
-            appendNewElementIfNotNull(descriptor, serviceElement, ELEMENT.serviceType, service.getServiceType());
-            appendNewElementIfNotNull(descriptor, serviceElement, ELEMENT.serviceId, service.getServiceId());
-            if (service instanceof RemoteService) {
-                RemoteService rs = (RemoteService) service;
-                appendNewElementIfNotNull(descriptor, serviceElement, ELEMENT.SCPDURL, rs.getDescriptorURI());
-                appendNewElementIfNotNull(descriptor, serviceElement, ELEMENT.controlURL, rs.getControlURI());
-                appendNewElementIfNotNull(descriptor, serviceElement, ELEMENT.eventSubURL, rs.getEventSubscriptionURI());
-            } else if (service instanceof LocalService) {
-                LocalService ls = (LocalService) service;
-                appendNewElementIfNotNull(descriptor, serviceElement, ELEMENT.SCPDURL, namespace.getDescriptorPath(ls));
-                appendNewElementIfNotNull(descriptor, serviceElement, ELEMENT.controlURL, namespace.getControlPath(ls));
-                appendNewElementIfNotNull(descriptor, serviceElement, ELEMENT.eventSubURL, namespace.getEventSubscriptionPath(ls));
+                appendNewElementIfNotNull(descriptor, serviceElement, ELEMENT.serviceType, service.getServiceType());
+                appendNewElementIfNotNull(descriptor, serviceElement, ELEMENT.serviceId, service.getServiceId());
+                if (service instanceof RemoteService) {
+                    RemoteService rs = (RemoteService) service;
+                    appendNewElementIfNotNull(descriptor, serviceElement, ELEMENT.SCPDURL, rs.getDescriptorURI());
+                    appendNewElementIfNotNull(descriptor, serviceElement, ELEMENT.controlURL, rs.getControlURI());
+                    appendNewElementIfNotNull(descriptor, serviceElement, ELEMENT.eventSubURL, rs.getEventSubscriptionURI());
+                } else if (service instanceof LocalService) {
+                    LocalService ls = (LocalService) service;
+                    appendNewElementIfNotNull(descriptor, serviceElement, ELEMENT.SCPDURL, namespace.getDescriptorPath(ls));
+                    appendNewElementIfNotNull(descriptor, serviceElement, ELEMENT.controlURL, namespace.getControlPath(ls));
+                    appendNewElementIfNotNull(descriptor, serviceElement, ELEMENT.eventSubURL, namespace.getEventSubscriptionPath(ls));
             }
         }
     }
@@ -565,7 +573,7 @@ public class UDA10DeviceDescriptorBinderImpl implements DeviceDescriptorBinder, 
 
         // TODO: UPNP VIOLATION: Netgear DG834 uses a non-URI: 'www.netgear.com'
         if (uri.startsWith("www.")) {
-             uri = "http://" + uri;
+            uri = "http://" + uri;
         }
 
         // TODO: UPNP VIOLATION: Plutinosoft uses unencoded relative URIs

@@ -15,6 +15,9 @@
 
 package org.fourthline.cling.android;
 
+import android.os.Build;
+import android.util.Log;
+
 import org.fourthline.cling.transport.impl.NetworkAddressFactoryImpl;
 import org.fourthline.cling.transport.spi.InitializationException;
 
@@ -52,14 +55,30 @@ public class AndroidNetworkAddressFactory extends NetworkAddressFactoryImpl {
             // TODO: Workaround Android DNS reverse lookup issue, still a problem on ICS+?
             // http://4thline.org/projects/mailinglists.html#nabble-td3011461
             String hostName = address.getHostAddress();
+            Log.e("gjh test Log", "sdk version=" + Build.VERSION.SDK_INT + "->hostName=" + hostName);
             try {
-                Field field = InetAddress.class.getDeclaredField("hostName");
-                field.setAccessible(true);
-                field.set(address, hostName);
+                Field field0 = null;
+                Object target = null;
+                try {
+                    field0 = InetAddress.class.getDeclaredField("holder");
+                    field0.setAccessible(true);
+                    target = field0.get(address);
+                    field0 = target.getClass().getDeclaredField("hostName");
+                } catch( NoSuchFieldException e ) {
+                    // Let's try the non-OpenJDK variant
+                    field0 = InetAddress.class.getDeclaredField("hostName");
+                    target = address;
+                }
+                if (field0 != null && hostName != null) {
+                    field0.setAccessible(true);
+                    field0.set(target, hostName);
+                } else {
+                    return false;
+                }
             } catch (Exception ex) {
                 log.log(Level.SEVERE,
-                    "Failed injecting hostName to work around Android InetAddress DNS bug: " + address,
-                    ex
+                        "Failed injecting hostName to work around Android InetAddress DNS bug: " + address,
+                        ex
                 );
                 return false;
             }

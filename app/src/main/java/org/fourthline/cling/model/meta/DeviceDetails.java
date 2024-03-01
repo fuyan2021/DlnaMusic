@@ -44,7 +44,7 @@ public class DeviceDetails implements Validatable {
     final private URI presentationURI;
     final private DLNADoc[] dlnaDocs;
     final private DLNACaps dlnaCaps;
-    final private DLNACaps secProductCaps; 
+    final private DLNACaps secProductCaps;
 
     public DeviceDetails(String friendlyName) {
         this(null, friendlyName, null, null, null, null, null);
