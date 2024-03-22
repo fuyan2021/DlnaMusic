@@ -15,6 +15,8 @@
 
 package org.fourthline.cling.protocol.sync;
 
+import android.util.Log;
+
 import org.fourthline.cling.UpnpService;
 import org.fourthline.cling.model.action.ActionCancelledException;
 import org.fourthline.cling.model.action.ActionException;
@@ -109,10 +111,12 @@ public class SendingAction extends SendingSync<OutgoingActionRequestMessage, Inc
         throws ActionException, RouterException {
 
         try {
+            Log.d("StreamResponseMessage", "sendRemoteRequest: "+requestMessage);
             log.fine("Writing SOAP request body of: " + requestMessage);
             getUpnpService().getConfiguration().getSoapActionProcessor().writeBody(requestMessage, actionInvocation);
 
             log.fine("Sending SOAP body of message as stream to remote device");
+
             return getUpnpService().getRouter().send(requestMessage);
         } catch (RouterException ex) {
             Throwable cause = Exceptions.unwrap(ex);

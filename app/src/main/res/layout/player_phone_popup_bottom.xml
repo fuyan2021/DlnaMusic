@@ -100,7 +100,7 @@
                 android:layout_marginLeft="10.0dip"
                 android:layout_toRightOf="@+id/play"
                 android:background="@drawable/next"
-                android:padding="2dp"
+                android:padding="10dp"
                 android:scaleType="centerInside" />
 
             <TextView

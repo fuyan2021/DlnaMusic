@@ -144,8 +144,7 @@ public class GPlayer extends Activity implements OnCompletionListener, OnErrorLi
         surfaceHolder.addCallback(this);
         surfaceHolder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
 
-        mNext = (ImageButton) findViewById(R.id.next);
-        mNext.setOnClickListener(this);
+        findViewById(R.id.next).setOnClickListener(this);
 
         mMediaPlayer = new MediaPlayer();
 
@@ -260,7 +259,7 @@ public class GPlayer extends Activity implements OnCompletionListener, OnErrorLi
     @Override
     protected void onNewIntent(Intent intent) {
         playURI = intent.getStringExtra("playURI");
-        if (!TextUtils.isEmpty(playURI)&&mMediaPlayer!=null) {
+        if (!TextUtils.isEmpty(playURI) && mMediaPlayer != null) {
             setUri(playURI);
         }
         setTitle(intent);
@@ -336,6 +335,9 @@ public class GPlayer extends Activity implements OnCompletionListener, OnErrorLi
                 doPauseResume();
                 break;
             }
+            case R.id.next:
+                doNext();
+                break;
             default:
                 break;
         }
@@ -371,6 +373,19 @@ public class GPlayer extends Activity implements OnCompletionListener, OnErrorLi
         updatePausePlay();
     }
 
+    private void doNext() {
+        if (mMediaPlayer == null) {
+            return;
+        }
+        if (null != mMediaListener) {
+            mMediaListener.next();
+        }
+        mMediaPlayer.start();
+        mHandler.sendEmptyMessageDelayed(MEDIA_PLAYER_PROGRESS_UPDATE, 200);
+        updatePausePlay();
+    }
+
+
     @Override
     public boolean onTouchEvent(MotionEvent event) {
         int action = event.getAction();
@@ -394,7 +409,7 @@ public class GPlayer extends Activity implements OnCompletionListener, OnErrorLi
         return false;
     }
 
-    public  int getAudioSessionId() {
+    public int getAudioSessionId() {
         return 1;
     }
 
@@ -690,7 +705,7 @@ public class GPlayer extends Activity implements OnCompletionListener, OnErrorLi
         public void onReceive(Context context, Intent intent) {
             String action = intent.getAction();
             String str1 = intent.getStringExtra("helpAction");
-            Log.d("BroadcastReceiver", "onReceive: "+str1);
+            Log.d("BroadcastReceiver", "onReceive: " + str1);
             if (str1.equals(Action.PLAY)) {
                 start();
                 updatePausePlay();
@@ -711,7 +726,7 @@ public class GPlayer extends Activity implements OnCompletionListener, OnErrorLi
                 }
 
             } else if (str1.equals(Action.SET_VOLUME)) {
-                int volume = (int) (intent.getDoubleExtra("volume", 0) * mAudioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)) ;
+                int volume = (int) (intent.getDoubleExtra("volume", 0) * mAudioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC));
                 mAudioManager.setStreamVolume(AudioManager.STREAM_MUSIC, volume, 0);
                 mHandler.sendEmptyMessageDelayed(MEDIA_PLAYER_VOLUME_CHANGED, 100);
             } else if (str1.equals(Action.STOP)) {
@@ -727,6 +742,8 @@ public class GPlayer extends Activity implements OnCompletionListener, OnErrorLi
         void start();
 
         void stop();
+
+        void next();
 
         void endOfMedia();
 

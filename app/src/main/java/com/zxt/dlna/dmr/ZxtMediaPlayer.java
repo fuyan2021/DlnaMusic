@@ -59,10 +59,10 @@ public class ZxtMediaPlayer {
 
     private TrackMetaData trackMetaData = new TrackMetaData(new ArrayList<>());
     private double storedVolume;
-    
+
     private Context mContext;
 
-    public ZxtMediaPlayer(UnsignedIntegerFourBytes instanceId,Context context,
+    public ZxtMediaPlayer(UnsignedIntegerFourBytes instanceId, Context context,
                           LastChange avTransportLastChange,
                           LastChange renderingControlLastChange) {
         super();
@@ -94,16 +94,18 @@ public class ZxtMediaPlayer {
 //        setVideoSink(videoComponent.getElement());
     }
 
-    public TrackMetaData getTrackMetaData(){
+    public TrackMetaData getTrackMetaData() {
         return trackMetaData;
     }
 
-    public void setTrackMetaData(TrackMetaData data){
+    public void setTrackMetaData(TrackMetaData data) {
         this.trackMetaData = data;
     }
-    public String getMaxTracks(){
+
+    public String getMaxTracks() {
         return this.maxTracks;
     }
+
     public UnsignedIntegerFourBytes getInstanceId() {
         return instanceId;
     }
@@ -152,10 +154,10 @@ public class ZxtMediaPlayer {
         return currentMediaInfo;
     }
 
-   // @Override
+    // @Override
     synchronized public void setURI(URI uri, String type, String name, String currentURIMetaData) {
         Log.i(TAG, "setURI " + uri);
-        currentMediaInfo = new MediaInfo(uri.toString(),currentURIMetaData);
+        currentMediaInfo = new MediaInfo(uri.toString(), currentURIMetaData);
         Log.i(TAG, "currentMediaInfo " + currentMediaInfo);
         currentPositionInfo = new PositionInfo(1, "", uri.toString());
 
@@ -164,9 +166,9 @@ public class ZxtMediaPlayer {
                 new AVTransportVariable.CurrentTrackURI(uri));
 
         transportStateChanged(TransportState.STOPPED);
-        
+
         GPlayer.setMediaListener(new GstMediaListener());
-        
+
         Intent intent = new Intent();
         intent.setClass(mContext, RenderPlayerService.class);
         intent.putExtra("type", type);
@@ -174,10 +176,11 @@ public class ZxtMediaPlayer {
         intent.putExtra("playURI", uri.toString());
         mContext.startService(intent);
     }
+
     synchronized public void setQPlayURI(URI uri, String type, String name, String trackMetaData) {
         Log.i(TAG, "setURI " + uri);
 
-        currentPositionInfo = new PositionInfo(1,"", uri.toString());
+        currentPositionInfo = new PositionInfo(1, "", uri.toString());
         Gson gson = new Gson();
         TrackMetaData trackMetaData1 = gson.fromJson(trackMetaData, TrackMetaData.class);
         setTrackMetaData(trackMetaData1);
@@ -197,18 +200,18 @@ public class ZxtMediaPlayer {
         mContext.startService(intent);
     }
 
-//    @Override
+    //    @Override
     synchronized public void setVolume(double volume) {
-        Log.i(TAG,"setVolume " + volume);
+        Log.i(TAG, "setVolume " + volume);
         storedVolume = getVolume();
-        
+
         Intent intent = new Intent();
         intent.setAction(Action.DMR);
         intent.putExtra("helpAction", Action.SET_VOLUME);
         intent.putExtra("volume", volume);
 
-        mContext.sendBroadcast(intent);        
-        
+        mContext.sendBroadcast(intent);
+
         ChannelMute switchedMute =
                 (storedVolume == 0 && volume > 0) || (storedVolume > 0 && volume == 0)
                         ? new ChannelMute(Channel.Master, storedVolume > 0 && volume == 0)
@@ -244,7 +247,7 @@ public class ZxtMediaPlayer {
         switch (state) {
             case STOPPED:
                 actions = new TransportAction[]{
-                        TransportAction.Play
+                        TransportAction.Next
                 };
                 break;
             case PLAYING:
@@ -259,11 +262,18 @@ public class ZxtMediaPlayer {
                         TransportAction.Stop,
                         TransportAction.Pause,
                         TransportAction.Seek,
-                        TransportAction.Play
+                };
+                break;
+            case NEXT:
+                actions = new TransportAction[]{
+                        TransportAction.Stop,
+                        TransportAction.Pause,
+                        TransportAction.Next,
                 };
                 break;
             default:
                 actions = null;
+                break;
         }
         return actions;
     }
@@ -323,7 +333,7 @@ public class ZxtMediaPlayer {
 */
     synchronized protected void transportStateChanged(TransportState newState) {
         TransportState currentTransportState = currentTransportInfo.getCurrentTransportState();
-        Log.d(TAG, "transportStateChanged: "+newState);
+        Log.d(TAG, "transportStateChanged: " + newState);
         log.fine("Current state is: " + currentTransportState + ", changing to new state: " + newState);
         currentTransportInfo = new TransportInfo(newState);
 
@@ -347,6 +357,11 @@ public class ZxtMediaPlayer {
             transportStateChanged(TransportState.STOPPED);
         }
 
+        @Override
+        public void next() {
+            transportStateChanged(TransportState.NEXT);
+        }
+
         public void endOfMedia() {
             log.fine("End Of Media event received, stopping media player backend");
             transportStateChanged(TransportState.NO_MEDIA_PRESENT);
@@ -357,15 +372,15 @@ public class ZxtMediaPlayer {
             log.fine("Position Changed event received: " + position);
             synchronized (ZxtMediaPlayer.this) {
                 currentPositionInfo = new PositionInfo(1, currentMediaInfo.getMediaDuration(),
-                        currentMediaInfo.getCurrentURI(), ModelUtil.toTimeString(position/1000),
-                        ModelUtil.toTimeString(position/1000));
+                        currentMediaInfo.getCurrentURI(), ModelUtil.toTimeString(position / 1000),
+                        ModelUtil.toTimeString(position / 1000));
             }
         }
 
         public void durationChanged(int duration) {
             log.fine("Duration Changed event received: " + duration);
             synchronized (ZxtMediaPlayer.this) {
-                String newValue = ModelUtil.toTimeString(duration/1000);
+                String newValue = ModelUtil.toTimeString(duration / 1000);
                 currentMediaInfo = new MediaInfo(currentMediaInfo.getCurrentURI(), "",
                         new UnsignedIntegerFourBytes(1), newValue, StorageMedium.NETWORK);
 
@@ -374,40 +389,40 @@ public class ZxtMediaPlayer {
                         new AVTransportVariable.CurrentMediaDuration(newValue));
             }
         }
-    } 
-    
+    }
+
     public double getVolume() {
         AudioManager audioManager = (AudioManager) mContext.getSystemService(Service.AUDIO_SERVICE);
-        double v =  (double)audioManager.getStreamVolume(AudioManager.STREAM_MUSIC)
+        double v = (double) audioManager.getStreamVolume(AudioManager.STREAM_MUSIC)
                 / audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
         Log.i(TAG, "getVolume " + v);
         return v;
     }
-    
+
     public void play() {
-        Log.i(TAG,"play");
+        Log.i(TAG, "play");
         sendBroadcastAction(Action.PLAY);
     }
 
     public void pause() {
-        Log.i(TAG,"pause");
+        Log.i(TAG, "pause");
         sendBroadcastAction(Action.PAUSE);
     }
 
     public void stop() {
-        Log.i(TAG,"stop");
+        Log.i(TAG, "stop");
         sendBroadcastAction(Action.STOP);
     }
-    
+
     public void seek(int position) {
-        Log.i(TAG,"seek " +  position);
+        Log.i(TAG, "seek " + position);
         Intent intent = new Intent();
         intent.setAction(Action.DMR);
         intent.putExtra("helpAction", Action.SEEK);
         intent.putExtra("position", position);
         mContext.sendBroadcast(intent);
     }
-    
+
     public void sendBroadcastAction(String action) {
         Intent intent = new Intent();
         intent.setAction(Action.DMR);

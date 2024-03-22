@@ -15,6 +15,8 @@
 
 package org.fourthline.cling.support.avtransport.lastchange;
 
+import android.util.Log;
+
 import org.fourthline.cling.model.ModelUtil;
 import org.fourthline.cling.support.lastchange.EventedValue;
 import org.fourthline.cling.support.lastchange.LastChangeParser;
@@ -41,9 +43,11 @@ public class AVTransportLastChangeParser extends LastChangeParser {
         // TODO: Android 2.2 has a broken SchemaFactory, we can't validate
         // http://code.google.com/p/android/issues/detail?id=9491&q=schemafactory&colspec=ID%20Type%20Status%20Owner%20Summary%20Stars
         if (!ModelUtil.ANDROID_RUNTIME) {
-            return new Source[]{new StreamSource(
+            Source[] sources = new Source[]{new StreamSource(
                     Thread.currentThread().getContextClassLoader().getResourceAsStream(SCHEMA_RESOURCE)
             )};
+            Log.d("AVLastChangeParser", "getSchemaSources: "+sources);
+            return sources;
         }
         return null;
     }

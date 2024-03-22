@@ -104,7 +104,7 @@ public abstract class AsyncServletUpnpStream extends UpnpStream implements Async
 
             responseMessage = process(requestMessage);
             Log.d("AsyncServletUpnpStream", "requestMessage: "+requestMessage.getBodyString());
-            Log.d("AsyncServletUpnpStream", "responseMessage: "+responseMessage.getBodyString());
+            Log.d("AsyncServletUpnpStream", "responseMessage: "+responseMessage);
             if (responseMessage != null) {
                 if (log.isLoggable(Level.FINER))
                     log.finer("Preparing HTTP response message: " + responseMessage);

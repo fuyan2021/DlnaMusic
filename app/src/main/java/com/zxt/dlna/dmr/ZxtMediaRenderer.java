@@ -25,6 +25,7 @@ import org.fourthline.cling.support.avtransport.lastchange.AVTransportLastChange
 import org.fourthline.cling.support.lastchange.LastChange;
 import org.fourthline.cling.support.lastchange.LastChangeAwareServiceManager;
 import org.fourthline.cling.support.model.TransportState;
+import org.fourthline.cling.support.qplay.QPlayLastChangeParser;
 import org.fourthline.cling.support.renderingcontrol.lastchange.RenderingControlLastChangeParser;
 
 import android.content.Context;
@@ -48,6 +49,7 @@ public class ZxtMediaRenderer {
 
     // These are shared between all "logical" player instances of a single service
     final protected LastChange avTransportLastChange = new LastChange(new AVTransportLastChangeParser());
+    final protected LastChange qPlayLastChange = new LastChange(new QPlayLastChangeParser());
     final protected LastChange renderingControlLastChange = new LastChange(new RenderingControlLastChangeParser());
 
     final protected Map<UnsignedIntegerFourBytes, ZxtMediaPlayer> mediaPlayers;
@@ -56,7 +58,7 @@ public class ZxtMediaRenderer {
     final protected LastChangeAwareServiceManager<AVTransportService> avTransport;
     final protected LastChangeAwareServiceManager<AudioRenderingControl> renderingControl;
 
-    final protected ServiceManager<DmrQPlayService> qPlayServiceServiceManager;
+    final protected DefaultServiceManager<DmrQPlayService> qPlayServiceServiceManager;
 
     final protected LocalDevice device;
 
@@ -87,13 +89,13 @@ public class ZxtMediaRenderer {
         /**
          * QPlay服务
          * */
-        LocalService qPlayService = binder.read(DmrQPlayService.class);
+        LocalService<DmrQPlayService> qPlayService = binder.read(DmrQPlayService.class);
         qPlayService.setQPlay("QPlay");
         qPlayServiceServiceManager =
                 new DefaultServiceManager<DmrQPlayService>(qPlayService) {
                     @Override
                     protected DmrQPlayService createServiceInstance() throws Exception {
-                        return new DmrQPlayService(mediaPlayers);
+                        return new DmrQPlayService(qPlayLastChange,mediaPlayers);
                     }
                 };
         qPlayService.setManager(qPlayServiceServiceManager);
@@ -171,7 +173,7 @@ public class ZxtMediaRenderer {
                             avTransportService,
                             renderingControlService,
                             qPlayService,
-                            connectionManagerService
+                            connectionManagerService,
                     }
             );
             Log.i(TAG, "getType: " + device.getType().toString());

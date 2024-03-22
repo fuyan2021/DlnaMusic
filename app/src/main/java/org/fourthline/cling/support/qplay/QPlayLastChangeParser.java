@@ -1,7 +1,10 @@
 package org.fourthline.cling.support.qplay;
 
 import org.fourthline.cling.model.ModelUtil;
+import org.fourthline.cling.support.lastchange.EventedValue;
 import org.fourthline.cling.support.lastchange.LastChangeParser;
+
+import java.util.Set;
 
 import javax.xml.transform.Source;
 import javax.xml.transform.stream.StreamSource;
@@ -34,8 +37,8 @@ public class QPlayLastChangeParser extends LastChangeParser {
         return null;
     }
 
-//    @Override
-//    protected Set<Class<? extends EventedValue>> getEventedVariables() {
-//        return RenderingControlVariable.ALL;
-//    }
+    @Override
+    protected Set<Class<? extends EventedValue>> getEventedVariables() {
+        return QPlayTransportVariable.ALL;
+    }
 }

@@ -13,11 +13,13 @@ import org.fourthline.cling.model.action.ActionException;
 import org.fourthline.cling.model.types.UDAServiceId;
 import org.fourthline.cling.model.types.UnsignedIntegerFourBytes;
 import org.fourthline.cling.support.avtransport.AVTransportException;
+import org.fourthline.cling.support.avtransport.lastchange.AVTransportLastChangeParser;
 import org.fourthline.cling.support.lastchange.LastChange;
 import org.fourthline.cling.support.lastchange.LastChangeDelegator;
 
 import java.beans.PropertyChangeSupport;
 import java.security.NoSuchAlgorithmException;
+import java.util.List;
 
 /**
  * Description: QPlay服务 <br>
@@ -26,8 +28,9 @@ import java.security.NoSuchAlgorithmException;
  * Date: 2024/2/20 <br>
  */
 @UpnpService(
-        serviceId = @UpnpServiceId(namespace = UDAServiceId.QPLAY_NAMESPACE,value = "QPlay"),
-        serviceType = @UpnpServiceType(value = "QPlay", version = 1)
+        serviceId = @UpnpServiceId(namespace = UDAServiceId.QPLAY_NAMESPACE, value = "QPlay"),
+        serviceType = @UpnpServiceType(value = "QPlay", version = 2),
+        stringConvertibleTypes = LastChange.class
 )
 @UpnpStateVariables({
         @UpnpStateVariable(name = "A_ARG_TYPE_Seed",
@@ -59,19 +62,24 @@ import java.security.NoSuchAlgorithmException;
                 datatype = "string"),
 
 })
-public abstract class AbstractQPlayService{
+public abstract class AbstractQPlayService  {
 //    @UpnpStateVariable(eventMaximumRateMilliseconds = 200)
-//     private LastChange lastChange;
-//     protected PropertyChangeSupport propertyChangeSupport;
+//    private LastChange lastChange;
+    protected PropertyChangeSupport propertyChangeSupport;
 
     public AbstractQPlayService() {
+        this.propertyChangeSupport = new PropertyChangeSupport(this);
     }
 
-//    protected AbstractQPlayService(LastChange lastChange) {
-//        this.propertyChangeSupport = new PropertyChangeSupport(this);
-////        this.lastChange = lastChange;
-//    }
-
+    protected AbstractQPlayService(LastChange lastChange) {
+        this.propertyChangeSupport = new PropertyChangeSupport(this);
+    }
+    protected AbstractQPlayService(PropertyChangeSupport propertyChangeSupport) {
+        this.propertyChangeSupport = propertyChangeSupport;
+    }
+    protected AbstractQPlayService(PropertyChangeSupport propertyChangeSupport, LastChange lastChange) {
+        this.propertyChangeSupport = propertyChangeSupport;
+    }
 //    @Override
 //    public LastChange getLastChange() {
 //        return lastChange;
@@ -79,30 +87,28 @@ public abstract class AbstractQPlayService{
 //
 //    @Override
 //    public void appendCurrentState(LastChange lc, UnsignedIntegerFourBytes instanceId) throws Exception {
-////        lc.setEventedValue(
-////                instanceId,
-////                new QPlayTransportVariable.SetNetwork(""),
-////                new QPlayTransportVariable.QPlayAuth("")
-////        );
+//
+//        lc.setEventedValue(
+//                instanceId,
+//                new QPlayTransportVariable.SetNetwork(""),
+//                new QPlayTransportVariable.QPlayAuth("")
+//        );
 //    }
-//    public PropertyChangeSupport getPropertyChangeSupport() {
-//        return propertyChangeSupport;
-//    }
+
+    public PropertyChangeSupport getPropertyChangeSupport() {
+        return propertyChangeSupport;
+    }
 
     /**
      * QPlay认证
      */
     @UpnpAction(out = {
-            @UpnpOutputArgument(name = "Code", stateVariable = "A_ARG_TYPE_Code"),
+            @UpnpOutputArgument(name = "Code", stateVariable = "A_ARG_TYPE_Code" ),
             @UpnpOutputArgument(name = "MID", stateVariable = "A_ARG_TYPE_MID"),
             @UpnpOutputArgument(name = "DID", stateVariable = "A_ARG_TYPE_DID")
     })
-    public abstract QPlayAuth qPlayAuth(@UpnpInputArgument(name = "Seed", stateVariable = "A_ARG_TYPE_Seed")
+    public abstract List<String> qPlayAuth(@UpnpInputArgument(name = "Seed", stateVariable = "A_ARG_TYPE_Seed")
                                         String seed) throws AVTransportException, NoSuchAlgorithmException;
-
-    public abstract String getCode();
-    public abstract String getMid();
-    public abstract String getDid();
 
     /**
      * 获取曲目

@@ -427,11 +427,18 @@ public class UDA10DeviceDescriptorBinderImpl implements DeviceDescriptorBinder, 
         );
 
         /**
-         * QPLAY
+         * QPLAY2
+         * */
+//        appendNewElementIfNotNull(
+//                descriptor, deviceElement, Descriptor.Device.QPLAY + ":" + ELEMENT.X_QPlay_SoftwareCapability,
+//                "QPlay:2",Descriptor.Device.QPLAY_NAMESPACE_URI
+//        );
+         /**
+         * QPLAY1
          * */
         appendNewElementIfNotNull(
-                descriptor, deviceElement, Descriptor.Device.QPLAY + ":" + ELEMENT.X_QPlay_SoftwareCapability,
-                "QPlay:2",Descriptor.Device.QPLAY_NAMESPACE_URI
+                descriptor, deviceElement, ELEMENT.QPlay_SoftwareCapability,
+                "QPlay:1"
         );
 
         if (deviceModelDetails.getManufacturerDetails() != null) {

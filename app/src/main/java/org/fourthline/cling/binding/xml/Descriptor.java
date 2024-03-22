@@ -47,7 +47,7 @@ public abstract class Descriptor {
             deviceType,
             friendlyName,
             X_QPlay_SoftwareCapability,
-
+            QPlay_SoftwareCapability,
             manufacturer,
             manufacturerURL,
             modelDescription,

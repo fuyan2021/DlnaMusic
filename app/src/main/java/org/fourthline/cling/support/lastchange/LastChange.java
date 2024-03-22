@@ -82,7 +82,6 @@ public class LastChange {
         for (EventedValue eventedValue : ev) {
             if (eventedValue != null)
                 event.setEventedValue(instanceID, eventedValue);
-
         }
     }
 

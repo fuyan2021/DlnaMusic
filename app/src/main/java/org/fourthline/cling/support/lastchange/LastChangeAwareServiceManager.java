@@ -15,6 +15,8 @@
 
 package org.fourthline.cling.support.lastchange;
 
+import android.util.Log;
+
 import org.fourthline.cling.model.DefaultServiceManager;
 import org.fourthline.cling.model.meta.LocalService;
 import org.fourthline.cling.model.meta.StateVariable;
@@ -99,6 +101,7 @@ public class LastChangeAwareServiceManager<T extends LastChangeDelegator> extend
 
         // Sum it all up and return it in the initial event to the GENA subscriber
         StateVariable variable = getService().getStateVariable("LastChange");
+        Log.d("LastChange", "readInitialEventedStateVariableValues: "+variable);
         Collection<StateVariableValue> values = new ArrayList();
         values.add(new StateVariableValue(variable, lc.toString()));
         return values;

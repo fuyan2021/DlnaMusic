@@ -27,7 +27,9 @@ public enum TransportState {
     PAUSED_RECORDING,
     RECORDING,
     NO_MEDIA_PRESENT,
-    CUSTOM;
+    CUSTOM,
+    NEXT,
+    PREVIOUS;
 
     String value;
 

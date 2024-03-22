@@ -15,6 +15,8 @@
 
 package org.fourthline.cling.transport.spi;
 
+import android.util.Log;
+
 import org.fourthline.cling.model.message.StreamRequestMessage;
 import org.fourthline.cling.model.message.StreamResponseMessage;
 import org.fourthline.cling.model.message.UpnpResponse;
@@ -83,13 +85,15 @@ public abstract class UpnpStream implements Runnable {
 
         // ... then grab the response
         StreamResponseMessage responseMsg = syncProtocol.getOutputMessage();
-
+        Log.d("UpnpStream", "process requestMsg: "+requestMsg.getBodyString());
+        Log.d("UpnpStream", "process: "+responseMsg.getBodyString());
         if (responseMsg == null) {
             // That's ok, the caller is supposed to handle this properly (e.g. convert it to HTTP 404)
             log.finer("Protocol did not return any response message");
             return null;
         }
         log.finer("Protocol returned response: " + responseMsg);
+
         return responseMsg;
     }
 
