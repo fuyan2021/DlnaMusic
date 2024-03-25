@@ -2,10 +2,12 @@
 package com.zxt.dlna.dmr;
 
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.logging.Logger;
 
 import org.fourthline.cling.model.ModelUtil;
+import org.fourthline.cling.model.meta.LocalService;
 import org.fourthline.cling.model.types.UDAServiceId;
 import org.fourthline.cling.model.types.UnsignedIntegerFourBytes;
 import org.fourthline.cling.support.avtransport.lastchange.AVTransportVariable;
@@ -18,6 +20,7 @@ import org.fourthline.cling.support.model.StorageMedium;
 import org.fourthline.cling.support.model.TransportAction;
 import org.fourthline.cling.support.model.TransportInfo;
 import org.fourthline.cling.support.model.TransportState;
+import org.fourthline.cling.support.qplay.QPlayAuth;
 import org.fourthline.cling.support.qplay.TrackMetaData;
 import org.fourthline.cling.support.qplay.TracksMetaData;
 import org.fourthline.cling.support.renderingcontrol.lastchange.ChannelMute;
@@ -43,7 +46,6 @@ public class ZxtMediaPlayer {
     final private static Logger log = Logger.getLogger(ZxtMediaPlayer.class.getName());
 
     private static final String TAG = "GstMediaPlayer";
-
     private final String maxTracks = "100";
 
     public static UnsignedIntegerFourBytes instanceId;
@@ -56,11 +58,13 @@ public class ZxtMediaPlayer {
     private volatile TransportInfo currentTransportInfo = new TransportInfo();
     private PositionInfo currentPositionInfo = new PositionInfo();
     private MediaInfo currentMediaInfo = new MediaInfo();
-
     private TrackMetaData trackMetaData = new TrackMetaData(new ArrayList<>());
+    private int currentTrack = 0;
     private double storedVolume;
 
     private Context mContext;
+
+    private QPlayAuth qPlayAuth = new QPlayAuth();
 
     public ZxtMediaPlayer(UnsignedIntegerFourBytes instanceId, Context context,
                           LastChange avTransportLastChange,
@@ -142,6 +146,7 @@ public class ZxtMediaPlayer {
         return false;
     } */
 
+
     synchronized public TransportInfo getCurrentTransportInfo() {
         return currentTransportInfo;
     }
@@ -182,8 +187,10 @@ public class ZxtMediaPlayer {
 
         currentPositionInfo = new PositionInfo(1, "", uri.toString());
         Gson gson = new Gson();
-        TrackMetaData trackMetaData1 = gson.fromJson(trackMetaData, TrackMetaData.class);
-        setTrackMetaData(trackMetaData1);
+        if (trackMetaData != null){
+            TrackMetaData trackMetaData1 = gson.fromJson(trackMetaData, TrackMetaData.class);
+            setTrackMetaData(trackMetaData1);
+        }
         getAvTransportLastChange().setEventedValue(getInstanceId(),
                 new AVTransportVariable.AVTransportURI(uri),
                 new AVTransportVariable.CurrentTrackURI(uri));
@@ -344,6 +351,14 @@ public class ZxtMediaPlayer {
         );
     }
 
+    synchronized public QPlayAuth getqPlayAuth() {
+        return qPlayAuth;
+    }
+
+    synchronized public void setqPlayAuth(String code,String mid,String did){
+        this.qPlayAuth = new QPlayAuth(code,mid,did);
+    }
+
     protected class GstMediaListener implements MediaListener {
         public void pause() {
             transportStateChanged(TransportState.PAUSED_PLAYBACK);
@@ -362,9 +377,15 @@ public class ZxtMediaPlayer {
             transportStateChanged(TransportState.NEXT);
         }
 
-        public void endOfMedia() {
+        public void endOfMedia() throws URISyntaxException {
             log.fine("End Of Media event received, stopping media player backend");
-            transportStateChanged(TransportState.NO_MEDIA_PRESENT);
+            if (trackMetaData.getTracksMetaData().size()<=1){
+                transportStateChanged(TransportState.NO_MEDIA_PRESENT);
+            }else {
+                currentTrack++;
+                String url = trackMetaData.getTracksMetaData().get(currentTrack).getTrackURIs().get(0);
+                setQPlayURI(new URI(url),"audio",trackMetaData.getTracksMetaData().get(currentTrack).getTitle(),null);
+            }
             //GstMediaPlayer.this.stop();
         }
 

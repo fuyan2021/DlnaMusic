@@ -15,6 +15,9 @@
 
 package org.fourthline.cling.support.qplay;
 
+import org.fourthline.cling.model.types.Datatype;
+import org.fourthline.cling.model.types.InvalidValueException;
+import org.fourthline.cling.support.lastchange.Event;
 import org.fourthline.cling.support.lastchange.EventedValue;
 import org.fourthline.cling.support.lastchange.EventedValueString;
 
@@ -38,6 +41,37 @@ public class QPlayTransportVariable {
         add(GetMaxTracks.class);
     }};
 
+
+    public static class QPlayCode extends EventedValueString {
+        public QPlayCode(String value) {
+            super(value);
+        }
+
+        public QPlayCode(Map.Entry<String, String>[] attrs) {
+            super(attrs);
+        }
+    }
+
+    public static class QPlayMid extends EventedValueString {
+        public QPlayMid(String value) {
+            super(value);
+        }
+
+        public QPlayMid(Map.Entry<String, String>[] attrs) {
+            super(attrs);
+        }
+    }
+
+    public static class QPlayDid extends EventedValueString {
+        public QPlayDid(String value) {
+            super(value);
+        }
+
+        public QPlayDid(Map.Entry<String, String>[] attrs) {
+            super(attrs);
+        }
+    }
+
     public static class SetNetwork extends EventedValueString {
         public SetNetwork(String value) {
             super(value);
@@ -48,13 +82,18 @@ public class QPlayTransportVariable {
         }
     }
 
-    public static class QPlayAuth extends EventedValueString {
-        public QPlayAuth(String value) {
+    public static class QPlayAuth extends EventedValue<org.fourthline.cling.support.qplay.QPlayAuth> {
+        public QPlayAuth(org.fourthline.cling.support.qplay.QPlayAuth value) {
             super(value);
         }
 
         public QPlayAuth(Map.Entry<String, String>[] attributes) {
             super(attributes);
+        }
+
+        @Override
+        protected Datatype<String> getDatatype() {
+                return Datatype.Default.STRING.getBuiltinType().getDatatype();
         }
     }
 

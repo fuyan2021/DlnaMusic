@@ -18,6 +18,8 @@ import java.net.URI;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -38,7 +40,7 @@ import javax.xml.transform.stream.StreamResult;
 public class DmrQPlayService extends AbstractQPlayService {
     private final String TAG = "DmrQPlayService";
     private final String MID = "12";
-    private final String DID = "DMP-A6";
+    private final String DID = "Z9X";
     private String code = "";
     private final String PSK = "0xa0,0xef,0x5d,0x13,0xf5,0x86,0x15,0x31,0xc3,0x89,0x36,0x9c,0xdf,0xa0,0x85,0xa7";
     private Map<UnsignedIntegerFourBytes, ZxtMediaPlayer> players;
@@ -47,13 +49,6 @@ public class DmrQPlayService extends AbstractQPlayService {
         return players;
     }
 
-    protected ZxtMediaPlayer getInstance() throws AVTransportException {
-        ZxtMediaPlayer player = getPlayers().get(ZxtMediaPlayer.instanceId);
-        if (player == null) {
-            throw new AVTransportException(AVTransportErrorCode.INVALID_INSTANCE_ID);
-        }
-        return player;
-    }
 
     public DmrQPlayService(LastChange lastChange, Map<UnsignedIntegerFourBytes, ZxtMediaPlayer> players) {
         super(lastChange);
@@ -62,97 +57,53 @@ public class DmrQPlayService extends AbstractQPlayService {
     }
 
     @Override
-    public List<String> qPlayAuth(String seed) throws AVTransportException, NoSuchAlgorithmException {
+    public ZxtMediaPlayer getInstance(UnsignedIntegerFourBytes instanceId) throws AVTransportException {
+        ZxtMediaPlayer player = getPlayers().get(ZxtMediaPlayer.instanceId);
+        if (player == null) {
+            throw new AVTransportException(AVTransportErrorCode.INVALID_INSTANCE_ID);
+        }
+        return player;
+    }
+
+    @Override
+    public QPlayAuth qPlayAuth(String seed) throws AVTransportException, NoSuchAlgorithmException {
         Log.d(TAG, "getQPlayAuth: " + seed);
-        // TODO: 2024/2/20 扬声器返回的结果有：制造商ID（MID）、设备类型ID（DID）、
-        //  随机字符串（Seed）与预共享密钥（PSK）相结合的哈希值（计算方式为：Code = MD5[Seed + PSK]）。
         code = calculateCode(seed, PSK);
-        QPlayAuth auth = new QPlayAuth(code, MID, DID);
-        List<String> values = new ArrayList<>();
-        // 设置多个值
-        values.add(code);
-        values.add(MID);
-        values.add(DID);
-        Gson gson = new Gson();
-        String result = gson.toJson(auth);
-        return  values;
-    }
-
-    public String coverAuth(){
-        try {
-            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-            DocumentBuilder builder = factory.newDocumentBuilder();
-            Document doc = builder.newDocument();
-
-            // Create Envelope element
-            Element envelope = doc.createElementNS("http://schemas.xmlsoap.org/soap/envelope/", "s:Envelope");
-            envelope.setAttribute("xmlns:s", "http://schemas.xmlsoap.org/soap/envelope/");
-            envelope.setAttribute("s:encodingStyle", "http://schemas.xmlsoap.org/soap/encoding/");
-
-            // Create Body element
-            Element body = doc.createElement("s:Body");
-
-            // Create GetPositionInfo element
-                Element getPositionInfo = doc.createElement("u:QPlayAuth");
-            getPositionInfo.setAttribute("xmlns:u", "urn:schemas-upnp-org:service:AVTransport:1");
-
-            // Create InstanceID element
-            Element elementCode = doc.createElement("Code");
-            elementCode.setTextContent(code);
-            Element elementMid = doc.createElement("MID");
-            elementCode.setTextContent(MID);
-            Element elementDid = doc.createElement("DID");
-            elementCode.setTextContent(DID);
-
-            // Assemble elements
-            getPositionInfo.appendChild(elementCode);
-            body.appendChild(getPositionInfo);
-            envelope.appendChild(body);
-            doc.appendChild(envelope);
-
-            // Convert Document to XML string
-            String xmlString = convertDocumentToString(doc);
-            return xmlString;
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return "";
-    }
-    private static String convertDocumentToString(Document doc) {
-        try {
-            // Use Transformer to convert Document to XML string
-            DOMSource domSource = new DOMSource(doc);
-            StringWriter writer = new StringWriter();
-            StreamResult result = new StreamResult(writer);
-            TransformerFactory tf = TransformerFactory.newInstance();
-            Transformer transformer = tf.newTransformer();
-            transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
-            transformer.transform(domSource, result);
-            return writer.toString();
-        } catch (Exception e) {
-            e.printStackTrace();
-            return null;
-        }
+        getInstance(null).setqPlayAuth(code, MID, DID);
+        return getInstance(null).getqPlayAuth();
     }
 
     @Override
     public String getTracksInfo(String startIndex, String number) throws ActionException {
+        //● 功能：获取一个范围内的曲目信息。
         Log.d(TAG, "getTracksInfo: ");
+
         return null;
     }
 
     @Override
     public String getTracksCount() throws AVTransportException {
+        //● 功能：返回QPlay队列中曲目的数量。
         Log.d(TAG, "getTracksCount: ");
-        return getInstance().getTrackMetaData().getTracksMetaData().size() + "";
+        int num = getInstance(null).getTrackMetaData().getTracksMetaData().size();
+        return String.valueOf(num);
     }
 
+
+    /**
+     * (in) StartingIndex - 在队列替换的起始位置(索引从1开始)。如果该值为-1，则整个队列被替换。
+     * 	(in) NextIndex – 如果NextIndex是一个有效的队列位置，则旧队列的当前播放曲目保持不变，
+     * 	播放完后下一个播放的曲目应该在NextIndex位置。如果NextIndex无效（NextIndex<1或者NextIndex>newPlaylist.length），
+     * 	则当前播放的曲目应该立即停止播放。
+     * 	(in) TracksMetaData - 队列曲目信息在TracksMetaData中定义。
+     * 	(out) NumberOfSuccess - 成功设置的曲目数量。
+     * */
     @Override
     public String setTracksInfo(String queueId, String startIndex, String nextIndex, String tracksMetaData) throws AVTransportException {
+        //替换一个范围内的曲目列表
         String number = "0";
         if (tracksMetaData != null) {
-            Gson gson = new Gson();
-            TrackMetaData trackMetaData = gson.fromJson(tracksMetaData, TrackMetaData.class);
+            TrackMetaData trackMetaData = covertTrackData(tracksMetaData);
             Log.d(TAG, "setTracksInfo: " + trackMetaData);
             URI uri = null;
             try {
@@ -160,27 +111,65 @@ public class DmrQPlayService extends AbstractQPlayService {
             } catch (Exception ex) {
                 ex.printStackTrace();
             }
-            getInstance().setQPlayURI(uri, "audio", trackMetaData.getTracksMetaData().get(0).getTitle(), tracksMetaData);
+            if (startIndex.equals("-1")){
+                getInstance(null).setTrackMetaData(trackMetaData);
+            }else {
+
+            }
+            int next = Integer.parseInt(nextIndex);
+            if (next < 1 || next > trackMetaData.getTracksMetaData().size()) {
+                getInstance(null).setQPlayURI(uri, "audio", trackMetaData.getTracksMetaData().get(0).getTitle(), tracksMetaData);
+            }
         }
         return number;
     }
 
     @Override
     public String insertTracks(String queueId, String startIndex, String tracksMetaData) throws AVTransportException {
+        //● 功能：在QPlay队列的指定位置开始插入一个或多个曲目
         Log.d(TAG, "insertTracks: ");
+        if (tracksMetaData != null) {
+            try {
+                int startNum = getInstance(null).getTrackMetaData().getTracksMetaData().size();
+                Log.d(TAG, "insertTracks: startNum" + startNum);
+                TrackMetaData trackMetaData = covertTrackData(tracksMetaData);
+                getInstance(null).getTrackMetaData().getTracksMetaData().addAll(Integer.parseInt(startIndex), trackMetaData.getTracksMetaData());
+                int endNum = getInstance(null).getTrackMetaData().getTracksMetaData().size();
+                Log.d(TAG, "insertTracks: endNum" + endNum);
+                return String.valueOf(endNum-startNum);
+            } catch (Exception e) {
+                e.printStackTrace();
+                Log.d(TAG, "insertTracks: error" + e.getMessage());
+            }
+        }
         return null;
     }
 
     @Override
     public String removeTracks(String queueId, String startIndex, String number) throws AVTransportException {
+        //● 功能：在QPlay队列的指定位置开始移除一个或多个曲目
         Log.d(TAG, "removeTracks: ");
-        return null;
+        int start = Integer.parseInt(startIndex);
+        if (start < 0) {
+            getInstance(null).getTrackMetaData().getTracksMetaData().clear();
+            return "0";
+        }
+        int num = Integer.parseInt(number);
+        int startNum = getInstance(null).getTrackMetaData().getTracksMetaData().size();
+        List<TracksMetaData> list = getInstance(null).getTrackMetaData().getTracksMetaData();
+        for (int i = 0; i < num; i++) {
+            list.remove(start+i);
+        }
+        getInstance(null).getTrackMetaData().setTracksMetaData(list);
+        int endNum = getInstance(null).getTrackMetaData().getTracksMetaData().size();
+        return String.valueOf(endNum-startNum);
     }
 
     @Override
     public String getMaxTracks() throws ActionException {
+        //● 功能：返回QPlay设备的队列最大支持曲目数量。
         Log.d(TAG, "getMaxTracks: ");
-        return getInstance().getMaxTracks();
+        return "500";
     }
 
     public static String calculateCode(String seed, String psk) throws NoSuchAlgorithmException {
@@ -197,15 +186,25 @@ public class DmrQPlayService extends AbstractQPlayService {
         return sb.toString();
     }
 
-//    @Override
-//    public UnsignedIntegerFourBytes[] getCurrentInstanceIds() {
-//        UnsignedIntegerFourBytes[] ids = new UnsignedIntegerFourBytes[getPlayers().size()];
-//        int i = 0;
-//        for (UnsignedIntegerFourBytes id : getPlayers().keySet()) {
-//            ids[i] = id;
-//            i++;
-//        }
-//        return ids;
-//    }
+    @Override
+    public UnsignedIntegerFourBytes[] getCurrentInstanceIds() {
+        UnsignedIntegerFourBytes[] ids = new UnsignedIntegerFourBytes[getPlayers().size()];
+        int i = 0;
+        for (UnsignedIntegerFourBytes id : getPlayers().keySet()) {
+            ids[i] = id;
+            i++;
+        }
+        return ids;
+    }
+
+    private TrackMetaData covertTrackData(String tracksMetaData) {
+        if (tracksMetaData != null) {
+            Gson gson = new Gson();
+            TrackMetaData trackMetaData = gson.fromJson(tracksMetaData, TrackMetaData.class);
+            return trackMetaData;
+        }
+        return null;
+    }
+
 
 }

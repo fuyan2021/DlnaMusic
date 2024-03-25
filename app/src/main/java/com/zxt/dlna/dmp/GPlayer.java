@@ -45,6 +45,7 @@ import com.zxt.dlna.util.Action;
 import com.zxt.dlna.util.Utils;
 
 import java.io.IOException;
+import java.net.URISyntaxException;
 
 public class GPlayer extends Activity implements OnCompletionListener, OnErrorListener,
         OnInfoListener, OnPreparedListener, OnSeekCompleteListener, OnVideoSizeChangedListener,
@@ -445,8 +446,13 @@ public class GPlayer extends Activity implements OnCompletionListener, OnErrorLi
     public void onSeekComplete(MediaPlayer mp) {
         Log.v(LOGTAG, "onSeekComplete Called");
         if (null != mMediaListener) {
-            mMediaListener.endOfMedia();
+            try {
+                mMediaListener.endOfMedia();
+            } catch (URISyntaxException e) {
+                throw new RuntimeException(e);
+            }
         }
+        exit();
     }
 
     @Override
@@ -504,9 +510,12 @@ public class GPlayer extends Activity implements OnCompletionListener, OnErrorLi
     public void onCompletion(MediaPlayer mp) {
         Log.v(LOGTAG, "onCompletion Called");
         if (null != mMediaListener) {
-            mMediaListener.endOfMedia();
+            try {
+                mMediaListener.endOfMedia();
+            } catch (URISyntaxException e) {
+                throw new RuntimeException(e);
+            }
         }
-
         exit();
     }
 
@@ -745,7 +754,7 @@ public class GPlayer extends Activity implements OnCompletionListener, OnErrorLi
 
         void next();
 
-        void endOfMedia();
+        void endOfMedia() throws URISyntaxException;
 
         void positionChanged(int position);
 

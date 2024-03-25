@@ -25,10 +25,29 @@ public class QPlayAuth {
                 (String) args.get("DID").getValue()
         );
     }
+    public QPlayAuth(){
 
+    }
     public QPlayAuth(String code, String MID, String DID) {
         Code = code;
         this.MID = MID;
         this.DID = DID;
+    }
+
+    @Override
+    public String toString() {
+        return "(QPlayAuth) Code: " + getCode() + " MID: " + getMID() + " DID: " + getDID();
+    }
+
+    public String getCode() {
+        return Code;
+    }
+
+    public String getMID() {
+        return MID;
+    }
+
+    public String getDID() {
+        return DID;
     }
 }

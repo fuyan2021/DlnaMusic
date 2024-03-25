@@ -1,5 +1,7 @@
 package org.fourthline.cling.support.qplay;
 
+import com.zxt.dlna.dmr.ZxtMediaPlayer;
+
 import org.fourthline.cling.binding.annotations.UpnpAction;
 import org.fourthline.cling.binding.annotations.UpnpInputArgument;
 import org.fourthline.cling.binding.annotations.UpnpOutputArgument;
@@ -38,13 +40,16 @@ import java.util.List;
                 datatype = "string"),
         @UpnpStateVariable(name = "A_ARG_TYPE_Code",
                 sendEvents = false,
-                datatype = "string"),
+                datatype = "string",
+                defaultValue = "0"),
         @UpnpStateVariable(name = "A_ARG_TYPE_MID",
                 sendEvents = false,
-                datatype = "string"),
+                datatype = "string",
+                defaultValue = "0"),
         @UpnpStateVariable(name = "A_ARG_TYPE_DID",
                 sendEvents = false,
-                datatype = "string"),
+                datatype = "string",
+                defaultValue = "0"),
         @UpnpStateVariable(name = "A_ARG_TYPE_TracksMetaData",
                 sendEvents = false,
                 datatype = "string"),
@@ -62,9 +67,9 @@ import java.util.List;
                 datatype = "string"),
 
 })
-public abstract class AbstractQPlayService  {
-//    @UpnpStateVariable(eventMaximumRateMilliseconds = 200)
-//    private LastChange lastChange;
+public abstract class AbstractQPlayService implements LastChangeDelegator{
+        @UpnpStateVariable(eventMaximumRateMilliseconds = 200)
+    private LastChange lastChange;
     protected PropertyChangeSupport propertyChangeSupport;
 
     public AbstractQPlayService() {
@@ -73,27 +78,30 @@ public abstract class AbstractQPlayService  {
 
     protected AbstractQPlayService(LastChange lastChange) {
         this.propertyChangeSupport = new PropertyChangeSupport(this);
+        this.lastChange = lastChange;
     }
+
     protected AbstractQPlayService(PropertyChangeSupport propertyChangeSupport) {
         this.propertyChangeSupport = propertyChangeSupport;
     }
-    protected AbstractQPlayService(PropertyChangeSupport propertyChangeSupport, LastChange lastChange) {
-        this.propertyChangeSupport = propertyChangeSupport;
+
+    @Override
+    public LastChange getLastChange() {
+        return lastChange;
     }
-//    @Override
-//    public LastChange getLastChange() {
-//        return lastChange;
-//    }
-//
-//    @Override
-//    public void appendCurrentState(LastChange lc, UnsignedIntegerFourBytes instanceId) throws Exception {
-//
-//        lc.setEventedValue(
-//                instanceId,
-//                new QPlayTransportVariable.SetNetwork(""),
-//                new QPlayTransportVariable.QPlayAuth("")
-//        );
-//    }
+
+    public abstract ZxtMediaPlayer getInstance(UnsignedIntegerFourBytes instanceId) throws AVTransportException;
+
+    @Override
+    public void appendCurrentState(LastChange lc, UnsignedIntegerFourBytes instanceId) throws Exception {
+        QPlayAuth qPlayAuth = getInstance(instanceId).getqPlayAuth();
+        lc.setEventedValue(
+                instanceId,
+                new QPlayTransportVariable.QPlayCode(qPlayAuth.getCode()),
+                new QPlayTransportVariable.QPlayDid(qPlayAuth.getDID()),
+                new QPlayTransportVariable.QPlayMid(qPlayAuth.getMID())
+        );
+    }
 
     public PropertyChangeSupport getPropertyChangeSupport() {
         return propertyChangeSupport;
@@ -103,11 +111,11 @@ public abstract class AbstractQPlayService  {
      * QPlay认证
      */
     @UpnpAction(out = {
-            @UpnpOutputArgument(name = "Code", stateVariable = "A_ARG_TYPE_Code" ),
-            @UpnpOutputArgument(name = "MID", stateVariable = "A_ARG_TYPE_MID"),
-            @UpnpOutputArgument(name = "DID", stateVariable = "A_ARG_TYPE_DID")
+            @UpnpOutputArgument(name = "Code", stateVariable = "A_ARG_TYPE_Code",getterName = "getCode"),
+            @UpnpOutputArgument(name = "MID", stateVariable = "A_ARG_TYPE_MID",getterName = "getMID"),
+            @UpnpOutputArgument(name = "DID", stateVariable = "A_ARG_TYPE_DID",getterName = "getDID")
     })
-    public abstract List<String> qPlayAuth(@UpnpInputArgument(name = "Seed", stateVariable = "A_ARG_TYPE_Seed")
+    public abstract QPlayAuth qPlayAuth(@UpnpInputArgument(name = "Seed", stateVariable = "A_ARG_TYPE_Seed")
                                         String seed) throws AVTransportException, NoSuchAlgorithmException;
 
     /**
