@@ -130,6 +130,9 @@ public class GPlayer extends Activity implements OnCompletionListener, OnErrorLi
 
     private int mBackCount;
 
+    private              int                mDuration              = -1;
+    private              int                mCurrentPosition       = -1;
+
     public static void setMediaListener(MediaListener mediaListener) {
         mMediaListener = mediaListener;
     }
@@ -378,12 +381,20 @@ public class GPlayer extends Activity implements OnCompletionListener, OnErrorLi
         if (mMediaPlayer == null) {
             return;
         }
-        if (null != mMediaListener) {
-            mMediaListener.next();
+        if (!mMediaPlayer.isPlaying()){
+            doPauseResume();
         }
-        mMediaPlayer.start();
-        mHandler.sendEmptyMessageDelayed(MEDIA_PLAYER_PROGRESS_UPDATE, 200);
-        updatePausePlay();
+        mMediaPlayer.seekTo(mMediaPlayer.getDuration() - 1000);
+        mCurrentPosition = mMediaPlayer.getCurrentPosition();
+        if (mMediaListener == null){
+            return;
+        }
+        mMediaListener.positionChanged(mCurrentPosition);
+        mMediaListener.durationChanged(mDuration);
+        mHandler.removeMessages(MEDIA_PLAYER_PROGRESS_UPDATE);
+        mHandler.sendEmptyMessageDelayed(MEDIA_PLAYER_PROGRESS_UPDATE,200);
+        mDuration = mMediaPlayer.getDuration();
+        mCurrentPosition = mDuration;
     }
 
 
@@ -478,8 +489,9 @@ public class GPlayer extends Activity implements OnCompletionListener, OnErrorLi
         mp.start();
         if (null != mMediaListener) {
             mMediaListener.start();
+            mDuration  = mp.getDuration();
+            mMediaListener.durationChanged(mDuration);
         }
-
         // mediaController.setMediaPlayer(this);
         // mediaController.setAnchorView(this.findViewById(R.id.gplayer_surfaceview));
         // mediaController.setEnabled(true);
@@ -509,6 +521,7 @@ public class GPlayer extends Activity implements OnCompletionListener, OnErrorLi
     @Override
     public void onCompletion(MediaPlayer mp) {
         Log.v(LOGTAG, "onCompletion Called");
+        mCurrentPosition = mDuration;
         if (null != mMediaListener) {
             try {
                 mMediaListener.endOfMedia();
@@ -600,8 +613,8 @@ public class GPlayer extends Activity implements OnCompletionListener, OnErrorLi
 
     @Override
     public void start() {
-
         try {
+            mDuration = -1;
             mMediaPlayer.start();
             mHandler.sendEmptyMessageDelayed(MEDIA_PLAYER_PROGRESS_UPDATE, 200);
 

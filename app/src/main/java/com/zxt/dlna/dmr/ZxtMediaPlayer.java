@@ -45,7 +45,7 @@ public class ZxtMediaPlayer {
 
     final private static Logger log = Logger.getLogger(ZxtMediaPlayer.class.getName());
 
-    private static final String TAG = "GstMediaPlayer";
+    private static final String TAG = "QPlayMediaPlayer";
     private final String maxTracks = "100";
 
     public static UnsignedIntegerFourBytes instanceId;
@@ -382,8 +382,7 @@ public class ZxtMediaPlayer {
             if (trackMetaData.getTracksMetaData().size()<=1){
                 transportStateChanged(TransportState.NO_MEDIA_PRESENT);
             }else {
-                currentTrack++;
-                String url = trackMetaData.getTracksMetaData().get(currentTrack).getTrackURIs().get(0);
+                String url = trackMetaData.getTracksMetaData().get(currentTrack++).getTrackURIs().get(0);
                 setQPlayURI(new URI(url),"audio",trackMetaData.getTracksMetaData().get(currentTrack).getTitle(),null);
             }
             //GstMediaPlayer.this.stop();
