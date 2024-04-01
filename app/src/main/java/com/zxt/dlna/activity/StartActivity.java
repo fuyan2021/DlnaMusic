@@ -17,7 +17,6 @@ import com.zxt.dlna.util.FileUtil;
 import com.zxt.dlna.util.ImageUtil;
 
 import android.app.Activity;
-import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;

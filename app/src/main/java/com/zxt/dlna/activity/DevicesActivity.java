@@ -26,6 +26,7 @@ import org.fourthline.cling.support.model.item.VideoItem;
 import org.seamless.util.MimeType;
 import org.seamless.util.logging.LoggingUtil;
 
+import com.zxt.dlna.SocketClient;
 import com.zxt.dlna.application.BaseApplication;
 import com.zxt.dlna.dmp.DeviceItem;
 import com.zxt.dlna.dmr.ZxtMediaRenderer;
@@ -199,6 +200,13 @@ public class DevicesActivity extends Activity {
 		getApplicationContext().bindService(
 				new Intent(this, AndroidUpnpServiceImpl.class),
 				serviceConnection, Context.BIND_AUTO_CREATE);
+	}
+
+	@Override
+	protected void onResume() {
+		super.onResume();
+		SocketClient socketClient = new SocketClient();
+		socketClient.sendMessage("hello");
 	}
 
 	private void init() {
