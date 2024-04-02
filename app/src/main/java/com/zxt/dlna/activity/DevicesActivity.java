@@ -205,8 +205,8 @@ public class DevicesActivity extends Activity {
 	@Override
 	protected void onResume() {
 		super.onResume();
-		SocketClient socketClient = new SocketClient();
-		socketClient.sendMessage("hello");
+//		SocketClient socketClient = new SocketClient();
+//		socketClient.sendMessage("hello");
 	}
 
 	private void init() {

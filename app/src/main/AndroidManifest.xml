@@ -20,7 +20,6 @@
         android:allowBackup="false"
         android:icon="@drawable/ic_launcher"
         android:label="@string/appName"
-        android:networkSecurityConfig="@xml/network"
         android:theme="@style/Theme.Design">
 
         <activity

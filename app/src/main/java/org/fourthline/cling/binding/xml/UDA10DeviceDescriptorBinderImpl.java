@@ -287,10 +287,10 @@ public class UDA10DeviceDescriptorBinderImpl implements DeviceDescriptorBinder, 
                         String depth = XMLUtil.getTextContent(iconChild);
                         try {
                             icon.depth = (Integer.valueOf(depth));
-                       	} catch(NumberFormatException ex) {
-                       		log.warning("Invalid icon depth '" + depth + "', using 16 as default: " + ex);
-                       		icon.depth = 16;
-                       	}
+                        } catch (NumberFormatException ex) {
+                            log.warning("Invalid icon depth '" + depth + "', using 16 as default: " + ex);
+                            icon.depth = 16;
+                        }
                     } else if (ELEMENT.url.equals(iconChild)) {
                         icon.uri = parseURI(XMLUtil.getTextContent(iconChild));
                     } else if (ELEMENT.mimetype.equals(iconChild)) {
@@ -429,11 +429,11 @@ public class UDA10DeviceDescriptorBinderImpl implements DeviceDescriptorBinder, 
         /**
          * QPLAY2
          * */
-        appendNewElementIfNotNull(
-                descriptor, deviceElement, Descriptor.Device.QPLAY + ":" + ELEMENT.X_QPlay_SoftwareCapability,
-                "QPlay:2",Descriptor.Device.QPLAY_NAMESPACE_URI
-        );
-         /**
+//        appendNewElementIfNotNull(
+//                descriptor, deviceElement, Descriptor.Device.QPLAY + ":" + ELEMENT.X_QPlay_SoftwareCapability,
+//                "QPlay:2",Descriptor.Device.QPLAY_NAMESPACE_URI
+//        );
+        /**
          * QPLAY1
          * */
 //        appendNewElementIfNotNull(
@@ -538,18 +538,18 @@ public class UDA10DeviceDescriptorBinderImpl implements DeviceDescriptorBinder, 
 
         for (Service service : deviceModel.getServices()) {
             Element serviceElement = appendNewElement(descriptor, serviceListElement, ELEMENT.service);
-                appendNewElementIfNotNull(descriptor, serviceElement, ELEMENT.serviceType, service.getServiceType());
-                appendNewElementIfNotNull(descriptor, serviceElement, ELEMENT.serviceId, service.getServiceId());
-                if (service instanceof RemoteService) {
-                    RemoteService rs = (RemoteService) service;
-                    appendNewElementIfNotNull(descriptor, serviceElement, ELEMENT.SCPDURL, rs.getDescriptorURI());
-                    appendNewElementIfNotNull(descriptor, serviceElement, ELEMENT.controlURL, rs.getControlURI());
-                    appendNewElementIfNotNull(descriptor, serviceElement, ELEMENT.eventSubURL, rs.getEventSubscriptionURI());
-                } else if (service instanceof LocalService) {
-                    LocalService ls = (LocalService) service;
-                    appendNewElementIfNotNull(descriptor, serviceElement, ELEMENT.SCPDURL, namespace.getDescriptorPath(ls));
-                    appendNewElementIfNotNull(descriptor, serviceElement, ELEMENT.controlURL, namespace.getControlPath(ls));
-                    appendNewElementIfNotNull(descriptor, serviceElement, ELEMENT.eventSubURL, namespace.getEventSubscriptionPath(ls));
+            appendNewElementIfNotNull(descriptor, serviceElement, ELEMENT.serviceType, service.getServiceType());
+            appendNewElementIfNotNull(descriptor, serviceElement, ELEMENT.serviceId, service.getServiceId());
+            if (service instanceof RemoteService) {
+                RemoteService rs = (RemoteService) service;
+                appendNewElementIfNotNull(descriptor, serviceElement, ELEMENT.SCPDURL, rs.getDescriptorURI());
+                appendNewElementIfNotNull(descriptor, serviceElement, ELEMENT.controlURL, rs.getControlURI());
+                appendNewElementIfNotNull(descriptor, serviceElement, ELEMENT.eventSubURL, rs.getEventSubscriptionURI());
+            } else if (service instanceof LocalService) {
+                LocalService ls = (LocalService) service;
+                appendNewElementIfNotNull(descriptor, serviceElement, ELEMENT.SCPDURL, namespace.getDescriptorPath(ls));
+                appendNewElementIfNotNull(descriptor, serviceElement, ELEMENT.controlURL, namespace.getControlPath(ls));
+                appendNewElementIfNotNull(descriptor, serviceElement, ELEMENT.eventSubURL, namespace.getEventSubscriptionPath(ls));
             }
         }
     }
