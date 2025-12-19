@@ -21,7 +21,7 @@ import java.util.concurrent.TimeUnit;
 public class ApiClient {
 
     // 默认基础URL为本机IP
-    private static final String DEFAULT_BASE_URL = "http://127.0.0.1:9529";
+    private static final String DEFAULT_BASE_URL = "http://127.0.0.1:9529/ZidooMusicControl/v2";
     //base固定不变
     private String baseUrl;
     private OkHttpClient okHttpClient;
@@ -64,7 +64,12 @@ public class ApiClient {
      * @param baseUrl 基础URL
      */
     public void setBaseUrl(String baseUrl) {
-        this.baseUrl = baseUrl;
+        // 如果baseUrl已经包含/ZidooMusicControl/v2，则直接使用，否则自动拼接
+        if (baseUrl != null && !baseUrl.endsWith("/ZidooMusicControl/v2")) {
+            this.baseUrl = baseUrl + "/ZidooMusicControl/v2";
+        } else {
+            this.baseUrl = baseUrl;
+        }
     }
 
     /**
@@ -113,47 +118,216 @@ public class ApiClient {
     }
 
     /**
-     * 获取单曲音乐接口（直接返回MusicResponse对象）
-     * 接口地址：/ZidooMusicControl/v2/getSingleMusics
+     * 获取单曲列表
+     * 接口地址：/getSingleMusics
      * @param params 请求参数
      * @param callback 回调接口
      */
     public void getSingleMusics(Map<String, String> params, final ApiCallback<MusicResponse> callback) {
-        String url = "/ZidooMusicControl/v2/getSingleMusics";
+        String url = "/getSingleMusics";
         get(url, params, MusicResponse.class, callback);
     }
     
     /**
      * 获取艺术家列表接口（直接返回ArtistResponse对象）
-     * 接口地址：/ZidooMusicControl/v2/getArtists
+     * 接口地址：/getArtists
      * @param params 请求参数
      * @param callback 回调接口
      */
     public void getArtists(Map<String, String> params, final ApiCallback<ArtistResponse> callback) {
-        String url = "/ZidooMusicControl/v2/getArtists";
+        String url = "/getArtists";
         get(url, params, ArtistResponse.class, callback);
     }
     
     /**
      * 获取专辑列表接口（直接返回AlbumResponse对象）
-     * 接口地址：/ZidooMusicControl/v2/getAlbums
+     * 接口地址：/getAlbums
      * @param params 请求参数
      * @param callback 回调接口
      */
     public void getAlbums(Map<String, String> params, final ApiCallback<AlbumResponse> callback) {
-        String url = "/ZidooMusicControl/v2/getAlbums";
+        String url = "/getAlbums";
         get(url, params, AlbumResponse.class, callback);
     }
 
     /**
+     * 获取专辑下的歌曲列表
+     * 接口地址：/getAlbumMusics
+     * @param params 请求参数
+     * @param callback 回调接口
+     */
+    public void getAlbumMusics(Map<String, String> params, final ApiCallback<MusicResponse> callback) {
+        String url = "/getAlbumMusics";
+        // 使用MusicResponse类作为响应类型，因为它的结构符合要求（array为歌曲列表）
+        get(url, params, MusicResponse.class, callback);
+    }
+
+    /**
      * 获取作曲家列表接口（直接返回ComposerResponse对象）
-     * 接口地址：/ZidooMusicControl/v2/getComposerList
+     * 接口地址：/getComposerList
      * @param params 请求参数
      * @param callback 回调接口
      */
     public void getComposerList(Map<String, String> params, final ApiCallback<ComposerResponse> callback) {
-        String url = "/ZidooMusicControl/v2/getComposerList";
+        String url = "/getComposerList";
         get(url, params, ComposerResponse.class, callback);
+    }
+
+    /**
+     * 获取艺术家的专辑列表接口（直接返回AlbumResponse对象）
+     * 接口地址：/getArtistAlbums
+     * @param params 请求参数
+     * @param callback 回调接口
+     */
+    public void getArtistAlbums(Map<String, String> params, final ApiCallback<AlbumResponse> callback) {
+        String url = "/getArtistAlbums";
+        get(url, params, AlbumResponse.class, callback);
+    }
+    
+    /**
+     * 获取艺术家的歌曲列表接口（直接返回MusicResponse对象）
+     * 接口地址：/getArtistMusics
+     * @param params 请求参数
+     * @param callback 回调接口
+     */
+    public void getArtistMusics(Map<String, String> params, final ApiCallback<MusicResponse> callback) {
+        String url = "/getArtistMusics";
+        get(url, params, MusicResponse.class, callback);
+    }
+    
+    /**
+     * 获取作曲家的专辑列表接口（直接返回AlbumResponse对象）
+     * 接口地址：/getComposerAlbumList
+     * @param params 请求参数
+     * @param callback 回调接口
+     */
+    public void getComposerAlbumList(Map<String, String> params, final ApiCallback<AlbumResponse> callback) {
+        String url = "/getComposerAlbumList";
+        get(url, params, AlbumResponse.class, callback);
+    }
+
+    /**
+     * 获取作曲家的单曲列表接口（直接返回MusicResponse对象）
+     * 接口地址：/getComposerAudioList
+     * @param params 请求参数
+     * @param callback 回调接口
+     */
+    public void getComposerAudioList(Map<String, String> params, final ApiCallback<MusicResponse> callback) {
+        String url = "/getComposerAudioList";
+        get(url, params, MusicResponse.class, callback);
+    }
+    
+    /**
+     * 获取流派的专辑列表接口（直接返回AlbumResponse对象）
+     * 接口地址：/getGenreAlbumList
+     * @param params 请求参数
+     * @param callback 回调接口
+     */
+    public void getGenreAlbumList(Map<String, String> params, final ApiCallback<AlbumResponse> callback) {
+        String url = "/getGenreAlbumList";
+        get(url, params, AlbumResponse.class, callback);
+    }
+
+    /**
+     * 获取过滤列表（包含流派等信息）
+     * 接口地址：/getSingleFilterList
+     * @param params 请求参数
+     * @param callback 回调接口
+     */
+    public void getSingleFilterList(Map<String, String> params, final ApiCallback<List<GenreResponse.FilterItem>> callback) {
+        String url = "/getSingleFilterList";
+        // 由于返回的是数组，使用Object.class作为响应类型，后续在回调中进行类型转换
+        get(url, params, Object.class, new ApiCallback<Object>() {
+            @Override
+            public void onSuccess(Object response) {
+                // 响应是一个数组，需要进行转换
+                List<GenreResponse.FilterItem> filterItems = new ArrayList<>();
+                if (response instanceof List) {
+                    for (Object item : (List<?>) response) {
+                        if (item instanceof Map) {
+                            // 手动解析Map为FilterItem
+                            GenreResponse.FilterItem filterItem = new GenreResponse.FilterItem();
+                            Map<?, ?> itemMap = (Map<?, ?>) item;
+                            
+                            // 解析key和name
+                            if (itemMap.containsKey("key")) {
+                                filterItem.setKey(String.valueOf(itemMap.get("key")));
+                            }
+                            if (itemMap.containsKey("name")) {
+                                filterItem.setName(String.valueOf(itemMap.get("name")));
+                            }
+                            
+                            // 解析data字段
+                            if (itemMap.containsKey("data")) {
+                                Object dataObj = itemMap.get("data");
+                                if (dataObj instanceof List) {
+                                    List<GenreResponse.GenreData> genreDataList = new ArrayList<>();
+                                    for (Object dataItem : (List<?>) dataObj) {
+                                        if (dataItem instanceof Map) {
+                                            GenreResponse.GenreData genreData = new GenreResponse.GenreData();
+                                            Map<?, ?> dataMap = (Map<?, ?>) dataItem;
+                                            
+                                            // 解析genre data字段
+                                            if (dataMap.containsKey("typeID")) {
+                                                Object typeIdObj = dataMap.get("typeID");
+                                                if (typeIdObj instanceof Number) {
+                                                    genreData.setTypeID(((Number) typeIdObj).intValue());
+                                                } else {
+                                                    try {
+                                                        // 处理可能的浮点数字符串，如"1.0"
+                                                        double typeIdDouble = Double.parseDouble(String.valueOf(typeIdObj));
+                                                        genreData.setTypeID((int) typeIdDouble);
+                                                    } catch (NumberFormatException e) {
+                                                        // 如果解析失败，使用默认值0
+                                                        genreData.setTypeID(0);
+                                                    }
+                                                }
+                                            }
+                                            if (dataMap.containsKey("name")) {
+                                                genreData.setName(String.valueOf(dataMap.get("name")));
+                                            }
+                                            if (dataMap.containsKey("realName")) {
+                                                genreData.setRealName(String.valueOf(dataMap.get("realName")));
+                                            }
+                                            if (dataMap.containsKey("genreImage")) {
+                                                genreData.setGenreImage(String.valueOf(dataMap.get("genreImage")));
+                                            }
+                                            if (dataMap.containsKey("updateTime")) {
+                                                Object updateTimeObj = dataMap.get("updateTime");
+                                                if (updateTimeObj instanceof Number) {
+                                                    genreData.setUpdateTime(((Number) updateTimeObj).longValue());
+                                                } else {
+                                                    try {
+                                                        // 处理可能的浮点数字符串，如"1588492800000.0"
+                                                        double updateTimeDouble = Double.parseDouble(String.valueOf(updateTimeObj));
+                                                        genreData.setUpdateTime((long) updateTimeDouble);
+                                                    } catch (NumberFormatException e) {
+                                                        // 如果解析失败，使用默认值0
+                                                        genreData.setUpdateTime(0);
+                                                    }
+                                                }
+                                            }
+                                            
+                                            genreDataList.add(genreData);
+                                        }
+                                    }
+                                    filterItem.setData(genreDataList);
+                                }
+                            }
+                            
+                            filterItems.add(filterItem);
+                        }
+                    }
+                }
+                
+                callback.onSuccess(filterItems);
+            }
+            
+            @Override
+            public void onFailure(String errorMsg) {
+                callback.onFailure(errorMsg);
+            }
+        });
     }
 
     /**
@@ -540,6 +714,105 @@ public class ApiClient {
         
         public void setArray(List<ComposerInfo> array) {
             this.array = array != null ? array : new ArrayList<>();
+        }
+    }
+    
+    /**
+     * 流派响应类，用于解析/ZidooMusicControl/v2/getSingleFilterList接口返回的流派数据
+     */
+    public static class GenreResponse {
+        private List<FilterItem> data = new ArrayList<>();
+
+        public List<FilterItem> getData() {
+            return data;
+        }
+
+        public void setData(List<FilterItem> data) {
+            this.data = data;
+        }
+
+        /**
+         * 过滤项类
+         */
+        public static class FilterItem {
+            private String key;
+            private String name;
+            private List<GenreData> data = new ArrayList<>();
+
+            public String getKey() {
+                return key;
+            }
+
+            public void setKey(String key) {
+                this.key = key;
+            }
+
+            public String getName() {
+                return name;
+            }
+
+            public void setName(String name) {
+                this.name = name;
+            }
+
+            public List<GenreData> getData() {
+                return data;
+            }
+
+            public void setData(List<GenreData> data) {
+                this.data = data;
+            }
+        }
+
+        /**
+         * 流派数据类
+         */
+        public static class GenreData {
+            private int typeID;
+            private String name;
+            private String realName;
+            private String genreImage;
+            private long updateTime;
+
+            public int getTypeID() {
+                return typeID;
+            }
+
+            public void setTypeID(int typeID) {
+                this.typeID = typeID;
+            }
+
+            public String getName() {
+                return name;
+            }
+
+            public void setName(String name) {
+                this.name = name;
+            }
+
+            public String getRealName() {
+                return realName;
+            }
+
+            public void setRealName(String realName) {
+                this.realName = realName;
+            }
+
+            public String getGenreImage() {
+                return genreImage;
+            }
+
+            public void setGenreImage(String genreImage) {
+                this.genreImage = genreImage;
+            }
+
+            public long getUpdateTime() {
+                return updateTime;
+            }
+
+            public void setUpdateTime(long updateTime) {
+                this.updateTime = updateTime;
+            }
         }
     }
 

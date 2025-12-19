@@ -1,10 +1,13 @@
 package com.zxt.dlna.util;
 
 import com.zxt.dlna.dms.bean.AlbumInfo;
+import com.zxt.dlna.dms.bean.AudioInfo;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * 专辑容器类，用于管理从getAlbums接口获取的专辑列表
@@ -48,8 +51,13 @@ public class AlbumContainer {
                 albumInfoList = response != null ? response.getArray() : new ArrayList<AlbumInfo>();
                 isLoading = false;
                 
-                if (callback != null) {
-                    callback.onSuccess(albumInfoList);
+                // 为每个专辑获取歌曲列表
+                if (albumInfoList != null && !albumInfoList.isEmpty()) {
+                    loadSongsForAlbums(albumInfoList, callback);
+                } else {
+                    if (callback != null) {
+                        callback.onSuccess(albumInfoList);
+                    }
                 }
             }
             
@@ -79,6 +87,59 @@ public class AlbumContainer {
      */
     public List<AlbumInfo> getAlbumInfoList() {
         return albumInfoList;
+    }
+    
+    /**
+     * 为多个专辑获取歌曲列表
+     * @param albumList 专辑列表
+     * @param callback 回调接口
+     */
+    private void loadSongsForAlbums(List<AlbumInfo> albumList, final LoadCallback callback) {
+        if (albumList == null || albumList.isEmpty()) {
+            if (callback != null) {
+                callback.onSuccess(albumList);
+            }
+            return;
+        }
+        
+        final int totalAlbums = albumList.size();
+        final AtomicInteger loadedCount = new AtomicInteger(0);
+        final ApiClient apiClient = ApiClient.getInstance();
+        
+        for (final AlbumInfo albumInfo : albumList) {
+            Map<String, String> params = new HashMap<>();
+            params.put("id", String.valueOf(albumInfo.getId()));
+            params.put("start", "0");
+            params.put("count", "100");
+            
+            apiClient.getAlbumMusics(params, new ApiClient.ApiCallback<ApiClient.MusicResponse>() {
+                @Override
+                public void onSuccess(ApiClient.MusicResponse response) {
+                    List<AudioInfo> songs = response != null ? response.getArray() : new ArrayList<AudioInfo>();
+                    albumInfo.setSongs(songs);
+                    
+                    // 检查是否所有专辑的歌曲都已加载完成
+                    if (loadedCount.incrementAndGet() == totalAlbums) {
+                        if (callback != null) {
+                            callback.onSuccess(albumList);
+                        }
+                    }
+                }
+                
+                @Override
+                public void onFailure(String errorMsg) {
+                    // 即使某个专辑的歌曲加载失败，也要继续加载其他专辑的歌曲
+                    albumInfo.setSongs(new ArrayList<AudioInfo>());
+                    
+                    // 检查是否所有专辑的歌曲都已加载完成
+                    if (loadedCount.incrementAndGet() == totalAlbums) {
+                        if (callback != null) {
+                            callback.onSuccess(albumList);
+                        }
+                    }
+                }
+            });
+        }
     }
     
     /**

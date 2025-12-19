@@ -3,6 +3,8 @@ package com.zxt.dlna.dms.bean;
 import android.text.TextUtils;
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * 专辑信息
@@ -51,6 +53,7 @@ public class AlbumInfo implements Serializable, Cloneable {
 	private int randomCoverIndex;//随机默认封面图片index
 	private long updateTime;
 	private long createTime;
+	private List<AudioInfo> songs = new ArrayList<>();//专辑内的歌曲列表
 
 
 	public Long getId() {
@@ -364,6 +367,14 @@ public class AlbumInfo implements Serializable, Cloneable {
 
 	public void setCreateTime(long createTime) {
 		this.createTime = createTime;
+	}
+
+	public List<AudioInfo> getSongs() {
+		return this.songs;
+	}
+
+	public void setSongs(List<AudioInfo> songs) {
+		this.songs = songs;
 	}
 
 	public String getPinyinArtist() {
