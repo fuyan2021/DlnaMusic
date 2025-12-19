@@ -26,9 +26,21 @@ import java.io.ByteArrayOutputStream;
 import java.io.FileOutputStream;
 
 /**
- * A simple, tiny, nicely embeddable HTTP 1.0 server in Java
- * Modified from NanoHTTPD, you can find it here
- * http://elonen.iki.fi/code/nanohttpd/
+ * HttpServer
+ * 
+ * DLNA媒体服务器的HTTP服务组件，提供媒体文件的HTTP访问功能。
+ * 该类是DMS(数字媒体服务器)的核心组成部分，负责响应来自DMP(数字媒体播放器)
+ * 的媒体资源请求，支持流式传输视频、音频和图片文件。
+ * 
+ * 主要功能：
+ * 1. 提供HTTP 1.0/1.1服务，支持GET请求方法
+ * 2. 实现DLNA媒体资源的流式传输
+ * 3. 支持断点续传功能(206 Partial Content)
+ * 4. 与ContentTree集成，提供基于内容ID的媒体访问
+ * 5. 处理MIME类型检测和设置
+ * 
+ * 注意：该类基于NanoHTTPD进行了修改，专门针对DLNA媒体服务场景进行了优化。
+ * 原始版本可在http://elonen.iki.fi/code/nanohttpd/找到。
  */
 public class HttpServer
 {
@@ -47,52 +59,79 @@ public class HttpServer
 	 * @param header	Header entries, percent decoded
 	 * @return HTTP response, see class Response for details
 	 */
+	/**
+	 * HTTP请求处理方法
+	 * 
+	 * 该方法是HTTP服务器的核心处理入口，接收来自客户端的HTTP请求并返回相应的响应。
+	 * 对于DLNA媒体服务器，该方法特别实现了将URI映射到ContentTree中的媒体内容的功能。
+	 * 
+	 * @param uri 解码后的URI路径，不包含参数部分
+	 * @param method HTTP请求方法，如"GET"、"POST"等
+	 * @param header HTTP请求头信息
+	 * @param parms URL参数和POST数据参数
+	 * @param files 上传文件信息
+	 * @return HTTP响应对象，包含状态码、MIME类型和响应数据
+	 */
 	public Response serve( String uri, String method, Properties header, Properties parms, Properties files )
 	{
+		// 日志记录请求信息
 		System.out.println( method + " '" + uri + "' " );
 
+		// 打印请求头信息
 		Enumeration e = header.propertyNames();
 		while ( e.hasMoreElements())
 		{
 			String value = (String)e.nextElement();
 			System.out.println( "  HDR: '" + value + "' = '" +
-								header.getProperty( value ) + "'" );
+						header.getProperty( value ) + "'" );
 		}
+		
+		// 打印请求参数信息
 		e = parms.propertyNames();
 		while ( e.hasMoreElements())
 		{
 			String value = (String)e.nextElement();
 			System.out.println( "  PRM: '" + value + "' = '" +
-								parms.getProperty( value ) + "'" );
+						parms.getProperty( value ) + "'" );
 		}
+		
+		// 打印上传文件信息
 		e = files.propertyNames();
 		while ( e.hasMoreElements())
 		{
 			String value = (String)e.nextElement();
 			System.out.println( "  UPLOADED: '" + value + "' = '" +
-								files.getProperty( value ) + "'" );
+						files.getProperty( value ) + "'" );
 		}
 
-		//Map uri to acture file in ContentTree
-		
-		String itemId = uri.replaceFirst("/", "");
-		itemId = URLDecoder.decode(itemId);
+		// DLNA特定功能：将URI映射到ContentTree中的实际媒体文件
+		// 这是该服务器与ContentDirectory服务集成的关键点
+		String itemId = uri.replaceFirst("/", ""); // 移除URI开头的斜杠
+		itemId = URLDecoder.decode(itemId); // URL解码，处理包含特殊字符的路径
 		String newUri = null;
 		
+		// 检查ContentTree中是否存在对应的节点
 		if( ContentTree.hasNode(itemId) ) {
 			ContentNode node = ContentTree.getNode(itemId);
+			// 只有项目类型的节点才能被直接访问和流式传输
 			if (node.isItem()) {
-				newUri = node.getFullPath();
+				newUri = node.getFullPath(); // 获取实际文件路径
 			}
 		}
 		
+		// 如果找到匹配的媒体文件，则更新URI为实际文件路径
 		if (newUri != null) uri = newUri;
+		
+		// 使用serveFile方法处理文件服务
 		return serveFile( uri, header, myRootDir, false );
 	}
 
 	/**
-	 * HTTP response.
-	 * Return one of these from serve().
+	 * Response
+	 * 
+	 * HTTP响应封装类，包含HTTP响应的所有必要组成部分。
+	 * 该内部类用于构造和存储HTTP服务器返回给客户端的响应信息。
+	 * 主要包含状态码、MIME类型、响应数据和响应头信息。
 	 */
 	public class Response
 	{
@@ -163,7 +202,10 @@ public class HttpServer
 	}
 
 	/**
-	 * Some HTTP response status codes
+	 * HTTP响应状态码常量定义
+	 * 
+	 * 定义了服务器支持的主要HTTP状态码，包括成功、重定向、客户端错误和服务器错误等类型。
+	 * 特别添加了206 Partial Content用于支持DLNA媒体播放的断点续传功能。
 	 */
 	public static final String
 		HTTP_OK = "200 OK",
@@ -177,7 +219,9 @@ public class HttpServer
 		HTTP_NOTIMPLEMENTED = "501 Not Implemented";
 
 	/**
-	 * Common mime types for dynamic content
+	 * 常用MIME类型常量定义
+	 * 
+	 * 定义了服务器支持的主要媒体类型，用于正确设置Content-Type响应头。
 	 */
 	public static final String
 		MIME_PLAINTEXT = "text/plain",
@@ -190,8 +234,10 @@ public class HttpServer
 	// ==================================================
 
 	/**
-	 * Starts a HTTP server to given port.<p>
-	 * Throws an IOException if the socket is already in use
+	 * 构造函数，在指定端口启动HTTP服务器
+	 * 
+	 * @param port 服务器监听端口
+	 * @throws IOException 如果端口已被占用或无法创建ServerSocket
 	 */
 	public HttpServer( int port ) throws IOException
 	{

@@ -202,18 +202,11 @@ public class ImageDisplay extends Activity implements OnClickListener,
 	@Override
 	public void onClick(View v) {
 		int id = v.getId();
-		switch (id) {
-		case R.id.preButton: {
+		if (id == R.id.preButton) {
 			prevImage();
-
-			break;
-		}
-		case R.id.nextButton: {
+		} else if (id == R.id.nextButton) {
 			nextImage();
-
-			break;
-		}
-		case R.id.slideButton: {
+		} else if (id == R.id.slideButton) {
 			if (!isSlidePlaying) {
 				isSlidePlaying = true;
 				mSlideBtn.setBackgroundResource(R.drawable.ic_slide_pause);
@@ -227,9 +220,7 @@ public class ImageDisplay extends Activity implements OnClickListener,
 				Toast.makeText(mContext, R.string.info_image_slide_pause,
 						Toast.LENGTH_SHORT).show();
 			}
-			break;
-		}
-		case R.id.downloadButton: {
+		} else if (id == R.id.downloadButton) {
 			String path = saveCurrentBitmap();
 			if (!TextUtils.isEmpty(path)) {
 				Toast.makeText(
@@ -240,17 +231,11 @@ public class ImageDisplay extends Activity implements OnClickListener,
 				Toast.makeText(mContext, R.string.info_download_image_error,
 						Toast.LENGTH_SHORT).show();
 			}
-			break;
-		}
-		case R.id.sharedButton: {
+		} else if (id == R.id.sharedButton) {
 			String path = saveCurrentBitmap();
 			if (!TextUtils.isEmpty(path)) {
 				share(Uri.parse(path));
 			}
-			break;
-		}
-		default:
-			break;
 		}
 	}
 

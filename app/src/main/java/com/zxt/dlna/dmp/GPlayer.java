@@ -219,17 +219,13 @@ public class GPlayer extends Activity implements OnCompletionListener, OnErrorLi
             @Override
             public void onStopTrackingTouch(SeekBar seekBar) {
                 int id = seekBar.getId();
-                switch (id) {
-                    case R.id.seekBar_progress:
-                        if (mCanSeek) {
-                            int position = seekBar.getProgress();
-                            if (mMediaPlayer != null) {
-                                mMediaPlayer.seekTo(position);
-                            }
+                if (id == R.id.seekBar_progress) {
+                    if (mCanSeek) {
+                        int position = seekBar.getProgress();
+                        if (mMediaPlayer != null) {
+                            mMediaPlayer.seekTo(position);
                         }
-                        break;
-                    default:
-                        break;
+                    }
                 }
 
             }
@@ -322,28 +318,20 @@ public class GPlayer extends Activity implements OnCompletionListener, OnErrorLi
         // if (!mMediaPlayerLoaded)
         // return;
         int id = v.getId();
-        switch (id) {
-            case R.id.topBar_back:
-                exit();
-                break;
-            case R.id.sound:
-                isMute = !isMute;
-                mAudioManager.setStreamMute(AudioManager.STREAM_MUSIC, isMute);
-                if (isMute) {
-                    mSound.setImageResource(R.drawable.phone_480_sound_mute);
-                } else {
-                    mSound.setImageResource(R.drawable.phone_480_sound_on);
-                }
-                break;
-            case R.id.play: {
-                doPauseResume();
-                break;
+        if (id == R.id.topBar_back) {
+            exit();
+        } else if (id == R.id.sound) {
+            isMute = !isMute;
+            mAudioManager.setStreamMute(AudioManager.STREAM_MUSIC, isMute);
+            if (isMute) {
+                mSound.setImageResource(R.drawable.phone_480_sound_mute);
+            } else {
+                mSound.setImageResource(R.drawable.phone_480_sound_on);
             }
-            case R.id.next:
-                doNext();
-                break;
-            default:
-                break;
+        } else if (id == R.id.play) {
+            doPauseResume();
+        } else if (id == R.id.next) {
+            doNext();
         }
     }
 
@@ -581,6 +569,7 @@ public class GPlayer extends Activity implements OnCompletionListener, OnErrorLi
 
     public void setUri(String uri) {
         try {
+            Log.d("23331", "setUri: " + uri);
             mMediaPlayer.reset();
             playURI = uri;
             mMediaPlayer.setDataSource(playURI);

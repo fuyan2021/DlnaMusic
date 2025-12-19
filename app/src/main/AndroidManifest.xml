@@ -23,8 +23,9 @@
         android:theme="@style/Theme.Design">
 
         <activity
-            android:name="com.zxt.dlna.activity.StartActivity"
+            android:name="com.zxt.dlna.activity.OpenServerActivity"
             android:exported="true"
+            android:hardwareAccelerated="false"
             android:theme="@android:style/Theme.NoTitleBar">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -32,6 +33,7 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
         <activity
             android:name="com.zxt.dlna.activity.IndexActivity"
             android:exported="true"
@@ -130,6 +132,8 @@
 
         <service android:name="com.zxt.dlna.dmr.RenderPlayerService" />
         <service android:name="org.fourthline.cling.android.AndroidUpnpServiceImpl" />
+        <service android:name="com.zxt.dlna.dms.EversoloLibraryService" />
+
     </application>
 
 </manifest>

@@ -75,21 +75,14 @@ public class IndexActivity extends TabActivity {
 			@Override
 			public void onCheckedChanged(RadioGroup group, int checkedId) {
 				// TODO Auto-generated method stub
-				switch (checkedId) {
-				case R.id.main_tab_devices:
+				if (checkedId == R.id.main_tab_devices) {
 					mTabHost.setCurrentTabByTag(getString(R.string.device));
-					break;
-				case R.id.main_tab_content:
+				} else if (checkedId == R.id.main_tab_content) {
 					mTabHost.setCurrentTabByTag(getString(R.string.content));
-					break;
-				case R.id.main_tab_control:
+				} else if (checkedId == R.id.main_tab_control) {
 					mTabHost.setCurrentTabByTag(getString(R.string.control));
-					break;
-				case R.id.main_tab_settings:
+				} else if (checkedId == R.id.main_tab_settings) {
 					mTabHost.setCurrentTabByTag(getString(R.string.setting));
-					break;
-				default:
-					break;
 				}
 			}
 		});

@@ -212,25 +212,15 @@ public class ControlActivity extends Activity implements OnClickListener {
 
 	@Override
 	public void onClick(View v) {
-		switch (v.getId()) {
-		case R.id.media_iv_play: {
+		int id = v.getId();
+		if (id == R.id.media_iv_play) {
 			playPause();
-			break;
-		}
-		case R.id.media_iv_voc_plus: {
+		} else if (id == R.id.media_iv_voc_plus) {
 			soundUp();
-			break;
-		}
-		case R.id.media_iv_voc_cut: {
+		} else if (id == R.id.media_iv_voc_cut) {
 			soundDown();
-			break;
-		}
-		case R.id.media_iv_voc_mute: {
+		} else if (id == R.id.media_iv_voc_mute) {
 			soundMute();
-			break;
-		}
-		default:
-			break;
 		}
 	}
 

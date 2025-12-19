@@ -8,7 +8,7 @@ android {
     defaultConfig {
         applicationId "com.zxt.dlna"
         minSdkVersion 15
-        targetSdkVersion 21
+        targetSdkVersion 22
     }
 
     buildTypes {
