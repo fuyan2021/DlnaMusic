@@ -2,7 +2,6 @@
 package com.zxt.dlna.dms;
 
 import java.io.IOException;
-import java.net.URI;
 
 import org.fourthline.cling.binding.annotations.AnnotationLocalServiceBinder;
 import org.fourthline.cling.model.DefaultServiceManager;
@@ -18,7 +17,7 @@ import org.fourthline.cling.model.types.DeviceType;
 import org.fourthline.cling.model.types.UDADeviceType;
 import org.fourthline.cling.model.types.UDN;
 
-import com.zxt.dlna.activity.SettingActivity;
+import com.zxt.dlna.BuildConfig;
 import com.zxt.dlna.application.BaseApplication;
 import com.zxt.dlna.util.FileUtil;
 import com.zxt.dlna.util.UpnpUtil;
@@ -69,7 +68,7 @@ public class MediaServer {
 
         // 创建设备详情，包含设备名称、制造商信息和型号信息
         DeviceDetails details = new DeviceDetails(
-                SettingActivity.getDeviceName(context) + " (" + android.os.Build.MODEL + ")", 
+                BuildConfig.VERSION_NAME + " (" + android.os.Build.MODEL + ")",
                 new ManufacturerDetails(android.os.Build.MANUFACTURER), 
                 new ModelDetails(android.os.Build.MODEL, Utils.DMS_DESC, "v1"));
 

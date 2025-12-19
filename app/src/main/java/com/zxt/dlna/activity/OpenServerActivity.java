@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
@@ -23,12 +24,16 @@ import com.zxt.dlna.dms.EversoloLibraryService;
  **/
 public class OpenServerActivity extends Activity {
 
+    private static final String PREFS_NAME = "server_settings";
+    private static final String KEY_SERVER_ENABLED = "server_enabled";
+    
     private EversoloLibraryService libraryService;
     private boolean isServiceBound = false;
     private Switch switchCompat;
     private TextView textView;
     private Handler handler = new Handler(Looper.getMainLooper());
     private static String TAG = "23331";
+    private SharedPreferences sharedPreferences;
 
     private ServiceConnection serviceConnection = new ServiceConnection() {
         @Override
@@ -38,6 +43,22 @@ public class OpenServerActivity extends Activity {
                 EversoloLibraryService.LocalBinder binder = (EversoloLibraryService.LocalBinder) service;
                 libraryService = binder.getService();
                 isServiceBound = true;
+                
+                // 检查是否需要自动启动服务
+                boolean isServerEnabled = sharedPreferences.getBoolean(KEY_SERVER_ENABLED, false);
+                if (isServerEnabled && BaseApplication.upnpService == null) {
+                    new Thread(() -> {
+                        if (isServiceBound && libraryService != null) {
+                            libraryService.startServer();
+                            handler.post(() -> {
+                                if (!isFinishing() && !isDestroyed()) {
+                                    switchCompat.setChecked(true);
+                                    updateSwitchState();
+                                }
+                            });
+                        }
+                    }).start();
+                }
             } catch (Exception e) {
                 Log.e(TAG, "onServiceConnected: Error binding to service", e);
                 isServiceBound = false;
@@ -57,6 +78,9 @@ public class OpenServerActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_open_server);
 
+        // 初始化SharedPreferences
+        sharedPreferences = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        
         // 初始化UI组件
         switchCompat = (Switch) findViewById(R.id.switchBt);
         textView = (TextView) findViewById(R.id.text);
@@ -66,7 +90,8 @@ public class OpenServerActivity extends Activity {
         bindService(intent, serviceConnection, BIND_AUTO_CREATE);
 
         // 设置开关初始状态
-        switchCompat.setChecked(BaseApplication.upnpService != null);
+        boolean isServerEnabled = sharedPreferences.getBoolean(KEY_SERVER_ENABLED, false);
+        switchCompat.setChecked(isServerEnabled && BaseApplication.upnpService != null);
         updateSwitchState();
 
         // 设置开关监听器
@@ -91,6 +116,8 @@ public class OpenServerActivity extends Activity {
                         try {
                             // 检查Activity是否仍然活动
                             if (!isFinishing() && !isDestroyed()) {
+                                // 保存服务状态
+                                sharedPreferences.edit().putBoolean(KEY_SERVER_ENABLED, true).apply();
                                 switchCompat.setEnabled(true);
                                 updateSwitchState();
                             }
@@ -109,6 +136,8 @@ public class OpenServerActivity extends Activity {
                     handler.post(() -> {
                         // 检查Activity是否仍然活动
                         if (!isFinishing() && !isDestroyed()) {
+                            // 保存服务状态
+                            sharedPreferences.edit().putBoolean(KEY_SERVER_ENABLED, false).apply();
                             switchCompat.setEnabled(true);
                             updateSwitchState();
                         }

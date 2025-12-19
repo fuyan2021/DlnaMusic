@@ -46,6 +46,11 @@ public class AudioInfo  implements Serializable {
 	private long deviceId;//所属设备数据库ID
 	private long folderId = -1;//所属设备数据库ID
 	private String uri; // 文件的相对路径(设备挂载路径后的路径)
+
+	public String getTitle() {
+		return title;
+	}
+
 	private String title;//标题（歌曲名或专辑名）
 	private long albumId;//专辑ID
 	private String album;//专辑名
@@ -740,6 +745,14 @@ public class AudioInfo  implements Serializable {
 
 	public void setReplayGainAlbum(String replayGainAlbum) {
 		this.replayGainAlbum = replayGainAlbum;
+	}
+
+	public String getPath() {
+		return path;
+	}
+
+	public void setPath(String path) {
+		this.path = path;
 	}
 
 	public String getComposerIds() {

@@ -17,7 +17,17 @@ import android.widget.Toast;
 
 import com.zxt.dlna.R;
 import com.zxt.dlna.application.BaseApplication;
+import com.zxt.dlna.dms.bean.AlbumInfo;
+import com.zxt.dlna.dms.bean.ArtistInfo;
+import com.zxt.dlna.dms.bean.AudioInfo;
+import com.zxt.dlna.dms.bean.ComposerInfo;
+import com.zxt.dlna.dms.bean.GenreInfo;
+import com.zxt.dlna.util.AlbumContainer;
+import com.zxt.dlna.util.ApiClient;
+import com.zxt.dlna.util.ArtistContainer;
+import com.zxt.dlna.util.ComposerContainer;
 import com.zxt.dlna.util.DmsSpUtil;
+import com.zxt.dlna.util.SingleMusicContainer;
 
 import org.fourthline.cling.android.AndroidUpnpService;
 import org.fourthline.cling.android.AndroidUpnpServiceImpl;
@@ -29,12 +39,11 @@ import org.fourthline.cling.support.model.container.Container;
 import org.fourthline.cling.support.model.item.MusicTrack;
 import org.seamless.util.MimeType;
 
-import com.zxt.dlna.dms.bean.ComposerInfo;
-import com.zxt.dlna.dms.bean.GenreInfo;
-
 import java.io.File;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by fuyan
@@ -52,6 +61,38 @@ public class EversoloLibraryService extends Service {
     private List<ComposerInfo> composerInfoList = new ArrayList<>();
     private List<GenreInfo> genreInfoList = new ArrayList<>();
     private List<AudioInfo> audioInfoList = new ArrayList<>();
+
+    // 单曲容器，用于管理从getSingleMusics接口获取的音乐列表
+    private SingleMusicContainer singleMusicContainer;
+
+    // 艺术家容器，用于管理从getArtists接口获取的艺术家列表
+    private ArtistContainer artistContainer;
+
+    // 专辑容器，用于管理从getAlbums接口获取的专辑列表
+    private AlbumContainer albumContainer;
+
+    // 作曲家容器，用于管理从getComposerList接口获取的作曲家列表
+    private ComposerContainer composerContainer;
+
+    // 初始化单曲容器
+    private void initSingleMusicContainer() {
+        singleMusicContainer = new SingleMusicContainer();
+    }
+
+    // 初始化艺术家容器
+    private void initArtistContainer() {
+        artistContainer = new ArtistContainer();
+    }
+
+    // 初始化专辑容器
+    private void initAlbumContainer() {
+        albumContainer = new AlbumContainer();
+    }
+
+    // 初始化作曲家容器
+    private void initComposerContainer() {
+        composerContainer = new ComposerContainer();
+    }
 
     // 添加服务绑定状态标志
     private boolean isServiceBound = false;
@@ -144,8 +185,11 @@ public class EversoloLibraryService extends Service {
         stopServer();
     }
 
+    // 初始化方法
     private void init() {
-        loadArtistInfo();
+        initSingleMusicContainer();
+        initArtistContainer();
+        initAlbumContainer();
     }
 
     public void startServer() {
@@ -223,7 +267,7 @@ public class EversoloLibraryService extends Service {
 
             // 重置ContentTree，确保下次启动时从零开始
             ContentTree.resetContentTree();
-            
+
             // 重置准备标志，确保下次启动时重新初始化
             serverPrepared = false;
 
@@ -240,32 +284,84 @@ public class EversoloLibraryService extends Service {
         // 避免重复初始化
         if (serverPrepared)
             return;
-            
+
         // 获取内容树的根节点
         ContentNode rootNode = ContentTree.getRootNode();
 
-        // 1. 创建或更新音频容器
+        // 1. 初始化单曲容器
+        initSingleMusicContainer();
+        
+        // 2. 初始化艺术家容器
+        initArtistContainer();
+        
+        // 3. 初始化专辑容器
+        initAlbumContainer();
+        
+        // 4. 初始化作曲家容器
+        initComposerContainer();
+
+        // 5. 创建或更新音频容器
         Container audioContainer = createOrUpdateAudioContainer(rootNode);
-        
-        // 2. 加载音频文件
-        loadAudioFiles(audioContainer);
-        
-        // 3. 创建或更新艺术家容器
-        createOrUpdateArtistContainer(rootNode);
-        
-        // 4. 创建或更新专辑容器
-        createOrUpdateAlbumContainer(rootNode);
-        
-        // 5. 创建或更新作曲家容器
-        createOrUpdateComposerContainer(rootNode);
-        
-        // 6. 创建或更新流派容器
+
+//        // 3. 加载音频文件
+//        loadAudioFiles(audioContainer);
+
+        // 4. 加载API音乐列表
+        loadApiMusicList(audioContainer);
+
+        // 5. 加载API艺术家列表（带回调）
+        loadApiArtistList(new ArtistListCallback() {
+            @Override
+            public void onArtistListLoaded() {
+                // 6. 创建或更新艺术家容器
+                createOrUpdateArtistContainer(rootNode);
+            }
+
+            @Override
+            public void onArtistListLoadFailed(String errorMsg) {
+                Log.e(LOGTAG, "加载艺术家列表失败: " + errorMsg);
+                // 即使加载失败，也完成准备工作，避免服务挂起
+                finishPreparation();
+            }
+        });
+        // 7. 加载API专辑列表（带回调）
+        loadApiAlbumList(new AlbumListCallback() {
+            @Override
+            public void onAlbumListLoaded() {
+                // 8. 创建或更新专辑容器
+                createOrUpdateAlbumContainer(rootNode);
+            }
+
+            @Override
+            public void onAlbumListLoadFailed(String errorMsg) {
+                Log.e(LOGTAG, "加载专辑列表失败: " + errorMsg);
+                // 即使加载失败，也继续完成准备工作，避免服务挂起
+                finishPreparation();
+            }
+        });
+        // 8. 加载API作曲家列表（带回调）
+        loadApiComposerList(new ComposerListCallback() {
+            @Override
+            public void onComposerListLoaded() {
+                // 9. 创建或更新作曲家容器
+                createOrUpdateComposerContainer(rootNode);
+            }
+
+            @Override
+            public void onComposerListLoadFailed(String errorMsg) {
+                Log.e(LOGTAG, "加载作曲家列表失败: " + errorMsg);
+                // 即使加载失败，也继续完成准备工作，避免服务挂起
+                finishPreparation();
+            }
+        });
+
+        // 10. 创建或更新流派容器
         createOrUpdateGenreContainer(rootNode);
-        
-        // 7. 完成准备工作
+
+        // 11. 完成准备工作
         finishPreparation();
     }
-    
+
     /**
      * 创建或更新音频容器
      */
@@ -307,7 +403,7 @@ public class EversoloLibraryService extends Service {
         }
         return audioContainer;
     }
-    
+
     /**
      * 加载音频文件
      */
@@ -346,7 +442,7 @@ public class EversoloLibraryService extends Service {
             processAudioCursor(cursor, audioContainer);
         }
     }
-    
+
     /**
      * 创建或更新艺术家容器
      */
@@ -409,7 +505,7 @@ public class EversoloLibraryService extends Service {
                 // 更新ContentTree中的子容器引用
                 ContentTree.addNode(artistFoldId, new ContentNode(artistFoldId, artistSubContainer));
             }
-            
+
             // 添加测试曲目到艺术家子容器
             addTestTrackToContainer(artistSubContainer, artistFoldId, artistInfo.getName());
         }
@@ -417,7 +513,7 @@ public class EversoloLibraryService extends Service {
         // 更新艺术家容器的子容器计数
         artistContainer.setChildCount(artistChildCount);
     }
-    
+
     /**
      * 创建或更新专辑容器
      */
@@ -444,7 +540,7 @@ public class EversoloLibraryService extends Service {
                     ContentTree.ALBUM_ID, albumContainer
             ));
         }
-        
+
         // 从ContentTree中获取专辑容器，确保使用的是同一个对象实例
         Container albumContainer = ContentTree.getNode(ContentTree.ALBUM_ID).getContainer();
         // 为每个专辑创建子容器
@@ -479,7 +575,7 @@ public class EversoloLibraryService extends Service {
                 // 更新ContentTree中的子容器引用
                 ContentTree.addNode(albumFoldId, new ContentNode(albumFoldId, albumSubContainer));
             }
-            
+
             // 添加测试曲目到专辑子容器
             addTestTrackToContainer(albumSubContainer, albumFoldId, albumInfo.getName());
         }
@@ -487,7 +583,7 @@ public class EversoloLibraryService extends Service {
         // 更新专辑容器的子容器计数
         albumContainer.setChildCount(albumChildCount);
     }
-    
+
     /**
      * 向容器添加测试曲目
      */
@@ -520,7 +616,203 @@ public class EversoloLibraryService extends Service {
                 new ContentNode(testTrack.getId(), testTrack, url));
     }
 
+    /**
+     * 从API加载音乐列表
+     */
+    private void loadApiMusicList(final Container audioContainer) {
+        Map<String, String> params = new HashMap<>();
+        params.put("start", "0");
+        params.put("count", "100");
 
+        // 添加日志，显示MusicContainer使用的baseUrl
+        ApiClient apiClient = ApiClient.getInstance();
+        Log.d(LOGTAG, "SingleMusicContainer将使用的baseUrl: " + apiClient.getBaseUrl());
+
+        singleMusicContainer.loadMusicList(params, new SingleMusicContainer.LoadCallback() {
+            @Override
+            public void onSuccess(List<AudioInfo> audioInfoList) {
+                Log.d(LOGTAG, "API音乐列表加载成功，共 " + audioInfoList.size() + " 首歌曲");
+
+                // 将API获取的音乐添加到音频容器
+                addApiMusicToContainer(audioInfoList, audioContainer);
+            }
+
+            @Override
+            public void onFailure(String errorMsg) {
+                Log.d(LOGTAG, "API音乐列表加载失败: " + errorMsg);
+            }
+        });
+    }
+
+
+    /**
+     * 加载API艺术家列表的回调接口
+     */
+    private interface ArtistListCallback {
+        void onArtistListLoaded();
+
+        void onArtistListLoadFailed(String errorMsg);
+    }
+
+    /**
+     * 加载API专辑列表的回调接口
+     */
+    private interface AlbumListCallback {
+        void onAlbumListLoaded();
+
+        void onAlbumListLoadFailed(String errorMsg);
+    }
+
+    /**
+     * 加载API作曲家列表的回调接口
+     */
+    private interface ComposerListCallback {
+        void onComposerListLoaded();
+
+        void onComposerListLoadFailed(String errorMsg);
+    }
+
+    /**
+     * 加载API艺术家列表
+     */
+    private void loadApiArtistList(final ArtistListCallback callback) {
+        Map<String, String> params = new HashMap<>();
+        params.put("start", "0");
+        params.put("count", "100");
+        params.put("artistType", "0");
+
+        // 添加API调试日志
+        ApiClient apiClient = ApiClient.getInstance();
+        Log.d(LOGTAG, "当前ApiClient baseUrl: " + apiClient.getBaseUrl());
+        Log.d(LOGTAG, "加载艺术家列表请求参数: " + params.toString());
+
+        // 使用ArtistContainer加载艺术家列表
+        artistContainer.loadArtistList(params, new ArtistContainer.LoadCallback() {
+            @Override
+            public void onSuccess(List<ArtistInfo> artistInfoList) {
+                Log.d(LOGTAG, "API艺术家列表加载成功，共 " + artistInfoList.size() + " 位艺术家");
+
+                // 将API获取的艺术家保存到全局变量
+                EversoloLibraryService.this.artistInfoList = artistInfoList;
+
+                // 打印艺术家列表内容，用于调试
+                for (ArtistInfo artist : artistInfoList) {
+                    Log.d(LOGTAG, "艺术家: " + artist.getArtistId() + " - " + artist.getName());
+                }
+
+                // 调用回调通知加载完成
+                if (callback != null) {
+                    callback.onArtistListLoaded();
+                }
+            }
+
+            @Override
+            public void onFailure(String errorMsg) {
+                Log.e(LOGTAG, "API艺术家列表加载失败: " + errorMsg, new Exception("API调用失败"));
+
+                // 调用回调通知加载失败
+                if (callback != null) {
+                    callback.onArtistListLoadFailed(errorMsg);
+                }
+            }
+        });
+    }
+
+    /**
+     * 加载API作曲家列表
+     */
+    private void loadApiComposerList(final ComposerListCallback callback) {
+        Map<String, String> params = new HashMap<>();
+        params.put("start", "0");
+        params.put("count", "100");
+
+        // 添加API调试日志
+        ApiClient apiClient = ApiClient.getInstance();
+        Log.d(LOGTAG, "当前ApiClient baseUrl: " + apiClient.getBaseUrl());
+        Log.d(LOGTAG, "加载作曲家列表请求参数: " + params.toString());
+
+        // 使用ComposerContainer加载作曲家列表
+        composerContainer.loadComposerList(params, new ComposerContainer.LoadCallback() {
+            @Override
+            public void onSuccess(List<ComposerInfo> composerInfoList) {
+                Log.d(LOGTAG, "API作曲家列表加载成功，共 " + composerInfoList.size() + " 位作曲家");
+
+                // 将API获取的作曲家保存到全局变量
+                EversoloLibraryService.this.composerInfoList = composerInfoList;
+
+                // 打印作曲家列表内容，用于调试
+                for (ComposerInfo composer : composerInfoList) {
+                    Log.d(LOGTAG, "作曲家: " + composer.getArtistId() + " - " + composer.getName());
+                }
+
+                // 调用回调通知加载完成
+                if (callback != null) {
+                    callback.onComposerListLoaded();
+                }
+            }
+
+            @Override
+            public void onFailure(String errorMsg) {
+                Log.e(LOGTAG, "API作曲家列表加载失败: " + errorMsg, new Exception("API调用失败"));
+
+                // 调用回调通知加载失败
+                if (callback != null) {
+                    callback.onComposerListLoadFailed(errorMsg);
+                }
+            }
+        });
+    }
+
+    /**
+     * 将API获取的音乐添加到音频容器
+     */
+    private void addApiMusicToContainer(List<AudioInfo> audioInfoList, Container audioContainer) {
+        if (audioInfoList == null || audioInfoList.isEmpty()) {
+            return;
+        }
+
+        for (AudioInfo audioInfo : audioInfoList) {
+            try {
+                // 创建MusicTrack对象
+                String trackId = "api_track_" + audioInfo.getId();
+                String title = audioInfo.getTitle() != null ? audioInfo.getTitle() : "未知标题";
+                String artist = audioInfo.getArtist() != null ? audioInfo.getArtist() : "未知艺术家";
+                String album = audioInfo.getAlbum() != null ? audioInfo.getAlbum() : "未知专辑";
+                String filePath = audioInfo.getPath() != null ? audioInfo.getPath() : "";
+
+                // 创建资源对象
+                Res res = new Res(
+                        new MimeType("audio", "mpeg"),
+                        (long) audioInfo.getBitrate() * audioInfo.getDuration() / 8, // 计算文件大小
+                        filePath
+                );
+
+                // 创建音乐曲目项
+                MusicTrack musicTrack = new MusicTrack(
+                        trackId,                      // 唯一的项目ID
+                        audioContainer.getId(),       // 父容器ID
+                        title,                        // 标题
+                        artist,                       // 创作者
+                        album,                        // 专辑
+                        new PersonWithRole(artist, "Performer"), // 带角色的表演者
+                        res                           // 资源对象
+                );
+
+                // 添加曲目到容器
+                audioContainer.addItem(musicTrack);
+
+                // 添加曲目到内容树
+                ContentTree.addNode(trackId,
+                        new ContentNode(trackId, musicTrack, filePath));
+
+            } catch (Exception e) {
+                Log.d(LOGTAG, "添加API音乐到容器失败: " + e.getMessage());
+            }
+        }
+
+        // 更新容器的子项计数
+        audioContainer.setChildCount(audioContainer.getChildCount() + audioInfoList.size());
+    }
 
     /**
      * 完成准备工作
@@ -529,7 +821,7 @@ public class EversoloLibraryService extends Service {
         serverPrepared = true; // 设置准备完成标志，防止重复初始化
         loadingComplete();
     }
-    
+
     /**
      * 创建或更新作曲家容器
      */
@@ -592,7 +884,7 @@ public class EversoloLibraryService extends Service {
                 // 更新ContentTree中的子容器引用
                 ContentTree.addNode(composerFoldId, new ContentNode(composerFoldId, composerSubContainer));
             }
-            
+
             // 添加测试曲目到作曲家子容器
             addTestTrackToContainer(composerSubContainer, composerFoldId, composerInfo.getName());
         }
@@ -600,7 +892,7 @@ public class EversoloLibraryService extends Service {
         // 更新作曲家容器的子容器计数
         composerContainer.setChildCount(composerChildCount);
     }
-    
+
     /**
      * 创建或更新流派容器
      */
@@ -663,7 +955,7 @@ public class EversoloLibraryService extends Service {
                 // 更新ContentTree中的子容器引用
                 ContentTree.addNode(genreFoldId, new ContentNode(genreFoldId, genreSubContainer));
             }
-            
+
             // 添加测试曲目到流派子容器
             addTestTrackToContainer(genreSubContainer, genreFoldId, genreInfo.getName());
         }
@@ -811,144 +1103,94 @@ public class EversoloLibraryService extends Service {
         return null;
     }
 
+//    /**
+//     * 加载艺术家列表
+//     */
+//    public void loadApiArtistList() {
+//        // 创建API客户端实例
+//        ApiClient apiClient = ApiClient.getInstance();
+//        Log.d(LOGTAG, "loadApiArtistList: current baseUrl = " + apiClient.getBaseUrl());
+//
+//        Map<String, String> params = new HashMap<>();
+//        params.put("start", "0");
+//        params.put("count", "20");
+//
+//        apiClient.getArtists(params, new ApiClient.ApiCallback<ApiClient.ArtistResponse>() {
+//            @Override
+//            public void onSuccess(ApiClient.ArtistResponse response) {
+//                if (response != null && response.getArray() != null) {
+//                    List<ArtistInfo> artists = response.getArray();
+//                    Log.d(LOGTAG, "loadApiArtistList: 获取到艺术家列表，数量：" + artists.size());
+//
+//                    // 打印前5个艺术家的信息
+//                    for (int i = 0; i < Math.min(artists.size(), 5); i++) {
+//                        ArtistInfo artist = artists.get(i);
+//                        Log.d(LOGTAG, "loadApiArtistList: Artist " + (i + 1) + ": id=" + artist.getId() + ", name=" + artist.getName());
+//                    }
+//
+//                    artistInfoList = response.getArray();
+//                    createOrUpdateArtistContainer(ContentTree.getNode(ContentTree.ROOT_ID).getContainer());
+//                    // 更新艺术家节点
+//                    updateArtistNode(response.getArray());
+//                    // 通知媒体服务器内容已更新
+//                    if (mediaServer != null) {
+//                        mediaServer.contentChanged();
+//                    }
+//                } else {
+//                    Log.e(LOGTAG, "loadApiArtistList: 响应数据为空");
+//                }
+//            }
+//
+//            @Override
+//            public void onFailure(String errorMsg) {
+//                Log.e(LOGTAG, "loadApiArtistList: 获取艺术家列表失败，错误信息：" + errorMsg);
+//            }
+//        });
+//    }
+
     /**
-     * 加载艺术家、专辑、作曲家和流派信息
+     * 加载API专辑列表
      */
-    public void loadArtistInfo() {
-        // 创建测试艺术家列表
-        List<ArtistInfo> artistInfoList = new ArrayList<>();
+    private void loadApiAlbumList(final AlbumListCallback callback) {
+        Map<String, String> params = new HashMap<>();
+        params.put("start", "0");
+        params.put("count", "100");
 
-        // 添加第一个艺术家
-        ArtistInfo artistInfoD = new ArtistInfo();
-        artistInfoD.setId(123L);
-        artistInfoD.setName("周杰伦");
-        artistInfoD.setArtistId(123);
-        artistInfoList.add(artistInfoD);
+        // 添加API调试日志
+        ApiClient apiClient = ApiClient.getInstance();
+        Log.d(LOGTAG, "当前ApiClient baseUrl: " + apiClient.getBaseUrl());
+        Log.d(LOGTAG, "加载专辑列表请求参数: " + params.toString());
 
-        // 添加第二个艺术家
-        ArtistInfo artistInfoE = new ArtistInfo();
-        artistInfoE.setId(124L);
-        artistInfoE.setName("陈奕迅");
-        artistInfoE.setArtistId(124);
-        artistInfoList.add(artistInfoE);
-        this.artistInfoList = artistInfoList;
+        // 使用AlbumContainer加载专辑列表
+        albumContainer.loadAlbumList(params, new AlbumContainer.LoadCallback() {
+            @Override
+            public void onSuccess(List<AlbumInfo> albumInfoList) {
+                Log.d(LOGTAG, "API专辑列表加载成功，共 " + albumInfoList.size() + " 张专辑");
 
-        // 创建测试专辑列表
-        List<AlbumInfo> albumInfos = new ArrayList<>();
-        AlbumInfo albumInfo = new AlbumInfo();
-        albumInfo.setId(456L);
-        albumInfo.setName("泡沫");
-        albumInfo.setAlbumId(456);
-        albumInfos.add(albumInfo);
-        this.albumInfoList = albumInfos;
-        
-        // 创建测试作曲家列表
-        List<ComposerInfo> composerInfos = new ArrayList<>();
-        ComposerInfo composerInfo = new ComposerInfo();
-        composerInfo.setId(789L);
-        composerInfo.setName("贝多芬");
-        composerInfo.setArtistId(789);
-        composerInfos.add(composerInfo);
-        this.composerInfoList = composerInfos;
-        
-        // 创建测试流派列表
-        List<GenreInfo> genreInfos = new ArrayList<>();
-        GenreInfo genreInfo = new GenreInfo();
-        genreInfo.setId(101L);
-        genreInfo.setName("古典音乐");
-        genreInfo.setGenreId(101);
-        genreInfos.add(genreInfo);
-        this.genreInfoList = genreInfos;
+                // 将API获取的专辑保存到全局变量
+                EversoloLibraryService.this.albumInfoList = albumInfoList;
+
+                // 打印专辑列表内容，用于调试
+                for (AlbumInfo album : albumInfoList) {
+                    Log.d(LOGTAG, "专辑: " + album.getAlbumId() + " - " + album.getName() + " (" + album.getArtist() + ")");
+                }
+
+                // 调用回调通知加载完成
+                if (callback != null) {
+                    callback.onAlbumListLoaded();
+                }
+            }
+
+            @Override
+            public void onFailure(String errorMsg) {
+                Log.e(LOGTAG, "API专辑列表加载失败: " + errorMsg, new Exception("API调用失败"));
+
+                // 调用回调通知加载失败
+                if (callback != null) {
+                    callback.onAlbumListLoadFailed(errorMsg);
+                }
+            }
+        });
     }
 
-    // 内部数据类定义
-    public class ArtistInfo {
-        private Long id;
-        private String name;
-        private int artistId;
-
-        public Long getId() {
-            return id;
-        }
-
-        public void setId(Long id) {
-            this.id = id;
-        }
-
-        public String getName() {
-            return name;
-        }
-
-        public void setName(String name) {
-            this.name = name;
-        }
-
-        public int getArtistId() {
-            return artistId;
-        }
-
-        public void setArtistId(int artistId) {
-            this.artistId = artistId;
-        }
-    }
-
-    public class AlbumInfo {
-        private Long id;
-        private String name;
-        private int albumId;
-
-        public Long getId() {
-            return id;
-        }
-
-        public void setId(Long id) {
-            this.id = id;
-        }
-
-        public String getName() {
-            return name;
-        }
-
-        public void setName(String name) {
-            this.name = name;
-        }
-
-        public int getAlbumId() {
-            return albumId;
-        }
-
-        public void setAlbumId(int albumId) {
-            this.albumId = albumId;
-        }
-    }
-
-    public class AudioInfo {
-        private Long id;
-        private String name;
-        private String path;
-
-        public Long getId() {
-            return id;
-        }
-
-        public void setId(Long id) {
-            this.id = id;
-        }
-
-        public String getName() {
-            return name;
-        }
-
-        public void setName(String name) {
-            this.name = name;
-        }
-
-        public String getPath() {
-            return path;
-        }
-
-        public void setPath(String path) {
-            this.path = path;
-        }
-    }
 }

@@ -1,26 +1,13 @@
 package com.zxt.dlna.util;
 
+import android.app.Activity;
+import android.content.Context;
+import android.util.DisplayMetrics;
+import android.util.Log;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.regex.Pattern;
-
-import org.fourthline.cling.support.model.Res;
-
-import com.zxt.dlna.dmp.ContentItem;
-
-import android.annotation.SuppressLint;
-import android.app.Activity;
-import android.content.Context;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.graphics.Canvas;
-import android.graphics.Matrix;
-import android.graphics.Rect;
-import android.media.ExifInterface;
-import android.media.ThumbnailUtils;
-import android.provider.MediaStore.Video.Thumbnails;
-import android.util.DisplayMetrics;
-import android.util.Log;
 
 public class Utils {
 
@@ -123,32 +110,6 @@ public class Utils {
 		else
 			retStr = "" + i;
 		return retStr;
-	}
-
-	public static String getRealImagePath(ContentItem paramContentItem) {
-		int[] arrayOfInt = new int[paramContentItem.getItem().getResources()
-				.size()];
-		String str1 = "";
-		int i = 0;
-		// i = paramContentItem.getItem().getResources().size();
-		// if (str1.equals(""))
-		// return str1;
-		if (((Res) paramContentItem.getItem().getResources().get(i)).getValue() != null) {
-			String str2 = ((Res) paramContentItem.getItem().getResources()
-					.get(i)).getResolution();
-			if (str2 != null) {
-				str1 = ((Res) paramContentItem.getItem().getResources().get(i))
-						.getValue();
-				String[] arrayOfString = str2.split("x");
-				arrayOfInt[i] = (Integer.parseInt(arrayOfString[0]) * Integer
-						.parseInt(arrayOfString[1]));
-			}
-		}
-		// ++i;
-		// str1 = ((Res) paramContentItem.getItem().getResources()
-		// .get(getMaxID(arrayOfInt))).getValue();
-
-		return str1;
 	}
 
 	public static int getMaxID(int[] paramArrayOfInt) {
