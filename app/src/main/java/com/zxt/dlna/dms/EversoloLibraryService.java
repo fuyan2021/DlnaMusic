@@ -28,6 +28,7 @@ import com.zxt.dlna.util.ArtistContainer;
 import com.zxt.dlna.util.ComposerContainer;
 import com.zxt.dlna.util.CueUtils;
 import com.zxt.dlna.util.DmsSpUtil;
+import com.zxt.dlna.util.FileHelper;
 import com.zxt.dlna.util.GenreContainer;
 import com.zxt.dlna.util.SingleMusicContainer;
 
@@ -593,7 +594,7 @@ public class EversoloLibraryService extends Service {
                 musicParams.put("id", String.valueOf(artistInfo.getId()));
                 musicParams.put("start", "0");
                 musicParams.put("count", "100");
-
+                params.put("needParse", String.valueOf(true));
                 ApiClient.getInstance().getArtistMusics(musicParams, new ApiClient.ApiCallback<ApiClient.MusicResponse>() {
                     @Override
                     public void onSuccess(ApiClient.MusicResponse response) {
@@ -702,10 +703,16 @@ public class EversoloLibraryService extends Service {
         int trackCount = 0;
         for (AudioInfo song : songs) {
             // 创建资源对象
+            long fileSize = 0;
+            try {
+                fileSize = FileHelper.getFileSize(song.getPath());
+            } catch (Exception e) {
+                Log.e(LOGTAG, "获取文件大小失败: " + e.getMessage());
+            }
             Res res = new Res(
                     new MimeType("audio", "mpeg"),
-                    Long.valueOf(4024 * 1024), // 假设大小为1MB
-                    song.getUri() // 使用真实的歌曲URI
+                    fileSize, // 使用真实的文件大小
+                    song.getPath() // 使用真实的歌曲URI
             );
 
             // 创建音乐曲目项
@@ -725,7 +732,7 @@ public class EversoloLibraryService extends Service {
 
             // 添加曲目到内容树
             ContentTree.addNode(track.getId(),
-                    new ContentNode(track.getId(), track, song.getUri()));
+                    new ContentNode(track.getId(), track, song.getPath()));
         }
 
         // 更新容器的子项计数
@@ -739,7 +746,7 @@ public class EversoloLibraryService extends Service {
         Map<String, String> params = new HashMap<>();
         params.put("start", "0");
         params.put("count", "100");
-
+        params.put("needParse", String.valueOf(true));
         // 添加日志，显示MusicContainer使用的baseUrl
         ApiClient apiClient = ApiClient.getInstance();
         Log.d(LOGTAG, "SingleMusicContainer将使用的baseUrl: " + apiClient.getBaseUrl());
@@ -947,7 +954,7 @@ public class EversoloLibraryService extends Service {
             params.put("id", String.valueOf(albumInfo.getId()));
             params.put("start", "0");
             params.put("count", "100");
-
+            params.put("needParse", String.valueOf(true));
             // 调用API获取专辑歌曲
             apiClient.getAlbumMusics(params, new ApiClient.ApiCallback<ApiClient.MusicResponse>() {
                 @Override
@@ -986,121 +993,74 @@ public class EversoloLibraryService extends Service {
         }
 
         int addedCount = 0;
-
+        Map<String, String> namesMap = new HashMap<>();
         for (AudioInfo audioInfo : audioInfoList) {
+            if (audioInfo.isDsf() || "sacd".equals(audioInfo.getExtension()) || "dsd".equals(audioInfo.getExtension()) || "iso".equals(audioInfo.getExtension())) {
+                continue;
+            }
             try {
                 // 检查是否为CUE文件
-                if (audioInfo.isLocalCueSong() || (audioInfo.getAudioType() == AudioInfo.TYPE_CUE || audioInfo.getAudioType() == AudioInfo.TYPE_CUE_LIST)) {
+                if (audioInfo.isCue()) {
                     // 处理CUE文件
                     String filePath = audioInfo.getPath() != null ? audioInfo.getPath() : "";
-                    if (!TextUtils.isEmpty(filePath)) {
-                        File cueFile = new File(filePath);
-                        if (cueFile.exists()) {
-                            // 使用CueUtils解析CUE文件
-                            CueList cueList = CueUtils.parseCueFile(cueFile);
-                            if (cueList != null && cueList.getSongs() != null && !cueList.getSongs().isEmpty()) {
-                                List<CueInfo> cueInfoList = cueList.getSongs();
-                                String album = audioInfo.getAlbum() != null ? audioInfo.getAlbum() : "未知专辑";
-                                
-                                // 为每个CUE轨道创建一个MusicTrack
-                                for (int i = 0; i < cueInfoList.size(); i++) {
-                                    CueInfo cueInfo = cueInfoList.get(i);
-                                    
-                                    // 计算起始和结束位置
-                                    long startPosition = CueUtils.parseTime(cueInfo.getIndexBegin());
-                                    long endPosition = CueUtils.parseTime(cueInfo.getIndexEnd());
-                                    
-                                    // 如果是最后一个轨道且结束时间为0，则设置为源文件的总时长
-                                    if (endPosition == 0 && i == cueInfoList.size() - 1) {
-                                        endPosition = audioInfo.getDuration();
-                                    }
-                                    
-                                    // 跳过解析有问题的轨道
-                                    if ((startPosition == 0 && i != 0) || (endPosition == 0 && i != cueInfoList.size() - 1)) {
-                                        continue;
-                                    }
-                                    
-                                    // 确保结束时间大于起始时间
-                                    if (endPosition < startPosition) {
-                                        continue;
-                                    }
-                                    
-                                    // 创建MusicTrack对象
-                                    String trackId = "api_track_" + audioContainer.getId() + "_" + audioInfo.getId() + "_" + (i + 1);
-                                    String title = cueInfo.getTitle() != null ? cueInfo.getTitle() : ("Track " + (i + 1));
-                                    String artist = cueInfo.getPerformer() != null ? cueInfo.getPerformer() : 
-                                        (audioInfo.getArtist() != null ? audioInfo.getArtist() : "未知艺术家");
-                                    
-                                    // 在文件路径后添加起始和结束位置参数
-                                    String resFilePath = filePath + "?start=" + startPosition + "&end=" + endPosition;
-                                    
-                                    // 计算文件大小（基于比特率和时长）
-                                    long fileSize = (long) audioInfo.getBitrate() * (endPosition - startPosition) / 8;
-                                    
-                                    // 创建资源对象
-                                    Res res = new Res(
-                                            new MimeType("audio", "mpeg"),
-                                            fileSize,
-                                            resFilePath
-                                    );
-                                    
-                                    // 创建音乐曲目项
-                                    MusicTrack musicTrack = new MusicTrack(
-                                            trackId,                      // 唯一的项目ID
-                                            audioContainer.getId(),       // 父容器ID
-                                            title,                        // 标题
-                                            artist,                       // 创作者
-                                            album,                        // 专辑
-                                            new PersonWithRole(artist, "Performer"), // 带角色的表演者
-                                            res                           // 资源对象
-                                    );
-                                    
-                                    // 添加曲目到容器
-                                    audioContainer.addItem(musicTrack);
-                                    addedCount++;
-                                    
-                                    // 添加曲目到内容树
-                                    ContentTree.addNode(trackId,
-                                            new ContentNode(trackId, musicTrack, filePath));
-                                }
-                            }
-                        }
+                    Log.d(LOGTAG, "处理CUE文件: " + filePath);
+                    if (!filePath.isEmpty() && namesMap.containsKey(filePath)) {
+                        continue;
                     }
-                } else {
-                    // 非CUE文件，正常处理
-                    // 创建MusicTrack对象
-                    String trackId = "api_track_" + audioContainer.getId() + "_" + audioInfo.getId();
-                    String title = audioInfo.getTitle() != null ? audioInfo.getTitle() : "未知标题";
-                    String artist = audioInfo.getArtist() != null ? audioInfo.getArtist() : "未知艺术家";
-                    String album = audioInfo.getAlbum() != null ? audioInfo.getAlbum() : "未知专辑";
-                    String filePath = audioInfo.getPath() != null ? audioInfo.getPath() : "";
-
-                    // 创建资源对象
-                    Res res = new Res(
-                            new MimeType("audio", "mpeg"),
-                            (long) audioInfo.getBitrate() * audioInfo.getDuration() / 8, // 计算文件大小
-                            filePath
-                    );
-
-                    // 创建音乐曲目项
-                    MusicTrack musicTrack = new MusicTrack(
-                            trackId,                      // 唯一的项目ID
-                            audioContainer.getId(),       // 父容器ID
-                            title,                        // 标题
-                            artist,                       // 创作者
-                            album,                        // 专辑
-                            new PersonWithRole(artist, "Performer"), // 带角色的表演者
-                            res                           // 资源对象
-                    );
-
-                    // 添加曲目到容器
-                    audioContainer.addItem(musicTrack);
-                    addedCount++;
-
-                    // 添加曲目到内容树
-                    ContentTree.addNode(trackId,
-                            new ContentNode(trackId, musicTrack, filePath));
+                    namesMap.put(filePath, audioInfo.getTitle());
                 }
+                // 非CUE文件，正常处理
+
+                // 创建MusicTrack对象
+                String trackId = "api_track_" + audioContainer.getId() + "_" + audioInfo.getId();
+                String title = audioInfo.getTitle() != null ? audioInfo.getTitle() : "未知标题";
+                String artist = audioInfo.getArtist() != null ? audioInfo.getArtist() : "未知艺术家";
+                String album = audioInfo.getAlbum() != null ? audioInfo.getAlbum() : "未知专辑";
+                String filePath = audioInfo.getPath() != null ? audioInfo.getPath() : "";
+                Log.d(LOGTAG, "addApiMusicToContainer: uri" + audioInfo.getPath());
+                // 创建资源对象
+                // 对文件路径进行URL编码，以支持包含#符号等特殊字符的文件路径
+                String encodedFilePath = null;
+//                    try {
+//                        java.net.URI uri = new java.net.URI("file", null, filePath, null);
+//                        encodedFilePath = uri.toASCIIString().substring(7); // 去掉"file:"前缀
+//                    } catch (java.net.URISyntaxException e) {
+//                        // 如果URI创建失败，尝试手动替换#符号
+//                        encodedFilePath = filePath.replace("#", "%23");
+//                    }
+                encodedFilePath = filePath.replace("#", "%23");
+                // 创建资源对象
+                long fileSize = 0;
+                try {
+                    fileSize = FileHelper.getFileSize(filePath);
+                } catch (Exception e) {
+                    Log.e(LOGTAG, "获取文件大小失败: " + e.getMessage());
+                }
+                Res res = new Res(
+                        new MimeType("audio", "mpeg"),
+                        fileSize, // 使用真实的文件大小
+                        filePath // 使用真实的歌曲URI
+                );
+
+                // 创建音乐曲目项
+                MusicTrack musicTrack = new MusicTrack(
+                        trackId,                      // 唯一的项目ID
+                        audioContainer.getId(),       // 父容器ID
+                        title,                        // 标题
+                        artist,                       // 创作者
+                        album,                        // 专辑
+                        new PersonWithRole(artist, "Performer"), // 带角色的表演者
+                        res                           // 资源对象
+                );
+
+                // 添加曲目到容器
+                audioContainer.addItem(musicTrack);
+                addedCount++;
+
+                // 添加曲目到内容树
+                ContentTree.addNode(trackId,
+                        new ContentNode(trackId, musicTrack, filePath));
+
 
             } catch (Exception e) {
                 Log.d(LOGTAG, "添加API音乐到容器失败: " + e.getMessage());
@@ -1427,6 +1387,7 @@ public class EversoloLibraryService extends Service {
                 Map<String, String> params = new HashMap<>();
                 // genres参数应该是JSON格式的数组字符串
                 params.put("genres", "[" + genreInfo.getId() + "]");
+                params.put("needParse", String.valueOf(true));
                 params.put("start", "0");
                 params.put("count", "100");
 
@@ -1435,7 +1396,7 @@ public class EversoloLibraryService extends Service {
                     public void onSuccess(ApiClient.MusicResponse response) {
                         if (response != null && response.getArray() != null) {
                             List<AudioInfo> genreAudios = response.getArray();
-                            
+
                             // 将歌曲添加到单曲子容器
                             addApiMusicToContainer(genreAudios, genreMusicContainer);
                         }

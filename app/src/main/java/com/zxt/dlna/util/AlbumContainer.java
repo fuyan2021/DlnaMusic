@@ -109,7 +109,7 @@ public class AlbumContainer {
         for (final AlbumInfo albumInfo : albumList) {
             Map<String, String> params = new HashMap<>();
             params.put("id", String.valueOf(albumInfo.getId()));
-
+            params.put("needParse", String.valueOf(true));
             params.put("start", "0");
             params.put("count", "100");
             
