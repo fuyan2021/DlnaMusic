@@ -67,7 +67,7 @@ public class MediaServer {
         DeviceType type = new UDADeviceType(deviceType, version);
 
         // 创建设备详情，包含设备名称、制造商信息和型号信息
-        DeviceDetails details = new DeviceDetails(
+        DeviceDetails details = new DeviceDetails("fffy"+
                 BuildConfig.VERSION_NAME + " (" + android.os.Build.MODEL + ")",
                 new ManufacturerDetails(android.os.Build.MANUFACTURER), 
                 new ModelDetails(android.os.Build.MODEL, Utils.DMS_DESC, "v1"));

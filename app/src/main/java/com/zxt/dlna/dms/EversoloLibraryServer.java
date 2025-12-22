@@ -356,7 +356,7 @@ public class EversoloLibraryServer {
 
         for (ArtistInfo artistInfo : artistInfoList) {
             // 使用更简单的ID格式，避免复合ID可能导致的问题
-            String artistFoldId = "artist_" + artistInfo.getArtistId();
+            String artistFoldId = "artist_" + artistInfo.getId();
 
             // 创建艺术家子容器
             Container artistSubContainer = new Container(
@@ -447,7 +447,7 @@ public class EversoloLibraryServer {
 
         for (AlbumInfo albumInfo : albumInfoList) {
             // 使用更简单的ID格式，避免复合ID可能导致的问题
-            String albumFoldId = "album_" + albumInfo.getAlbumId();
+            String albumFoldId = "album_" + albumInfo.getId();
 
             // 创建艺术家子容器
             Container albumSubContainer = new Container(
@@ -554,6 +554,12 @@ public class EversoloLibraryServer {
                                     .getColumnIndexOrThrow(MediaStore.Audio.Media.DURATION));
                     String album = cursor.getString(cursor
                             .getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM));
+                    
+                    // 跳过CUE文件
+                    if (filePath != null && filePath.toLowerCase().endsWith(".cue")) {
+                        Log.d(LOGTAG, "跳过CUE文件: " + filePath);
+                        continue;
+                    }
 
                     // 创建DLNA资源对象（带异常处理）
                     Res res = null;

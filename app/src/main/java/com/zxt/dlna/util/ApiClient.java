@@ -498,7 +498,7 @@ public class ApiClient {
                     if (response.isSuccessful()) {
                         String responseBody = response.body() != null ? response.body().string() : "";
                         // 打印原始接口响应数据
-                        Log.d("ApiClient", "原始接口响应数据: " + responseBody);
+//                        Log.d("ApiClient", "原始接口响应数据: " + responseBody);
                         try {
                             T responseObject = gson.fromJson(responseBody, clazz);
                             callback.onSuccess(responseObject);

@@ -9,6 +9,7 @@ import android.os.Binder;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
+import android.text.TextUtils;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -18,11 +19,14 @@ import com.zxt.dlna.dms.bean.AlbumInfo;
 import com.zxt.dlna.dms.bean.ArtistInfo;
 import com.zxt.dlna.dms.bean.AudioInfo;
 import com.zxt.dlna.dms.bean.ComposerInfo;
+import com.zxt.dlna.dms.bean.CueInfo;
+import com.zxt.dlna.dms.bean.CueList;
 import com.zxt.dlna.dms.bean.GenreInfo;
 import com.zxt.dlna.util.AlbumContainer;
 import com.zxt.dlna.util.ApiClient;
 import com.zxt.dlna.util.ArtistContainer;
 import com.zxt.dlna.util.ComposerContainer;
+import com.zxt.dlna.util.CueUtils;
 import com.zxt.dlna.util.DmsSpUtil;
 import com.zxt.dlna.util.GenreContainer;
 import com.zxt.dlna.util.SingleMusicContainer;
@@ -37,6 +41,7 @@ import org.fourthline.cling.support.model.container.Container;
 import org.fourthline.cling.support.model.item.MusicTrack;
 import org.seamless.util.MimeType;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -457,7 +462,7 @@ public class EversoloLibraryService extends Service {
 
         for (ArtistInfo artistInfo : artistInfoList) {
             // 使用更简单的ID格式，避免复合ID可能导致的问题
-            String artistFoldId = "artist_" + artistInfo.getArtistId();
+            String artistFoldId = "artist_" + artistInfo.getId();
 
             // 创建艺术家子容器
             Container artistSubContainer = new Container(
@@ -569,7 +574,7 @@ public class EversoloLibraryService extends Service {
                                 }
 
                                 // 使用albumTypeId参数调用getAlbumMusics接口获取该艺术家的专辑歌曲
-                                loadAlbumMusicsForArtist(albumSubContainer, albumSubFoldId, albumInfo, String.valueOf(artistInfo.getArtistId()), 0);
+                                loadAlbumMusicsForArtist(albumSubContainer, albumSubFoldId, albumInfo, String.valueOf(artistInfo.getId()), 0);
                             }
 
                             // 更新艺术家专辑容器的子容器计数
@@ -651,7 +656,7 @@ public class EversoloLibraryService extends Service {
 
         for (AlbumInfo albumInfo : albumInfoList) {
             // 使用更简单的ID格式，避免复合ID可能导致的问题
-            String albumFoldId = "album_" + albumInfo.getAlbumId();
+            String albumFoldId = "album_" + albumInfo.getId();
 
             // 创建专辑子容器
             Container albumSubContainer = new Container(
@@ -817,7 +822,7 @@ public class EversoloLibraryService extends Service {
 
                 // 打印艺术家列表内容，用于调试
                 for (ArtistInfo artist : artistInfoList) {
-                    Log.d(LOGTAG, "艺术家: " + artist.getArtistId() + " - " + artist.getName());
+                    Log.d(LOGTAG, "艺术家: " + artist.getId() + " - " + artist.getName());
                 }
 
                 // 调用回调通知加载完成
@@ -862,7 +867,7 @@ public class EversoloLibraryService extends Service {
 
                 // 打印作曲家列表内容，用于调试
                 for (ComposerInfo composer : composerInfoList) {
-                    Log.d(LOGTAG, "作曲家: " + composer.getArtistId() + " - " + composer.getName());
+                    Log.d(LOGTAG, "作曲家: " + composer.getId() + " - " + composer.getName());
                 }
 
                 // 调用回调通知加载完成
@@ -980,39 +985,122 @@ public class EversoloLibraryService extends Service {
             return;
         }
 
+        int addedCount = 0;
+
         for (AudioInfo audioInfo : audioInfoList) {
             try {
-                // 创建MusicTrack对象
-                String trackId = "api_track_" + audioInfo.getId();
-                String title = audioInfo.getTitle() != null ? audioInfo.getTitle() : "未知标题";
-                String artist = audioInfo.getArtist() != null ? audioInfo.getArtist() : "未知艺术家";
-                String album = audioInfo.getAlbum() != null ? audioInfo.getAlbum() : "未知专辑";
-                String filePath = audioInfo.getPath() != null ? audioInfo.getPath() : "";
+                // 检查是否为CUE文件
+                if (audioInfo.isLocalCueSong() || (audioInfo.getAudioType() == AudioInfo.TYPE_CUE || audioInfo.getAudioType() == AudioInfo.TYPE_CUE_LIST)) {
+                    // 处理CUE文件
+                    String filePath = audioInfo.getPath() != null ? audioInfo.getPath() : "";
+                    if (!TextUtils.isEmpty(filePath)) {
+                        File cueFile = new File(filePath);
+                        if (cueFile.exists()) {
+                            // 使用CueUtils解析CUE文件
+                            CueList cueList = CueUtils.parseCueFile(cueFile);
+                            if (cueList != null && cueList.getSongs() != null && !cueList.getSongs().isEmpty()) {
+                                List<CueInfo> cueInfoList = cueList.getSongs();
+                                String album = audioInfo.getAlbum() != null ? audioInfo.getAlbum() : "未知专辑";
+                                
+                                // 为每个CUE轨道创建一个MusicTrack
+                                for (int i = 0; i < cueInfoList.size(); i++) {
+                                    CueInfo cueInfo = cueInfoList.get(i);
+                                    
+                                    // 计算起始和结束位置
+                                    long startPosition = CueUtils.parseTime(cueInfo.getIndexBegin());
+                                    long endPosition = CueUtils.parseTime(cueInfo.getIndexEnd());
+                                    
+                                    // 如果是最后一个轨道且结束时间为0，则设置为源文件的总时长
+                                    if (endPosition == 0 && i == cueInfoList.size() - 1) {
+                                        endPosition = audioInfo.getDuration();
+                                    }
+                                    
+                                    // 跳过解析有问题的轨道
+                                    if ((startPosition == 0 && i != 0) || (endPosition == 0 && i != cueInfoList.size() - 1)) {
+                                        continue;
+                                    }
+                                    
+                                    // 确保结束时间大于起始时间
+                                    if (endPosition < startPosition) {
+                                        continue;
+                                    }
+                                    
+                                    // 创建MusicTrack对象
+                                    String trackId = "api_track_" + audioContainer.getId() + "_" + audioInfo.getId() + "_" + (i + 1);
+                                    String title = cueInfo.getTitle() != null ? cueInfo.getTitle() : ("Track " + (i + 1));
+                                    String artist = cueInfo.getPerformer() != null ? cueInfo.getPerformer() : 
+                                        (audioInfo.getArtist() != null ? audioInfo.getArtist() : "未知艺术家");
+                                    
+                                    // 在文件路径后添加起始和结束位置参数
+                                    String resFilePath = filePath + "?start=" + startPosition + "&end=" + endPosition;
+                                    
+                                    // 计算文件大小（基于比特率和时长）
+                                    long fileSize = (long) audioInfo.getBitrate() * (endPosition - startPosition) / 8;
+                                    
+                                    // 创建资源对象
+                                    Res res = new Res(
+                                            new MimeType("audio", "mpeg"),
+                                            fileSize,
+                                            resFilePath
+                                    );
+                                    
+                                    // 创建音乐曲目项
+                                    MusicTrack musicTrack = new MusicTrack(
+                                            trackId,                      // 唯一的项目ID
+                                            audioContainer.getId(),       // 父容器ID
+                                            title,                        // 标题
+                                            artist,                       // 创作者
+                                            album,                        // 专辑
+                                            new PersonWithRole(artist, "Performer"), // 带角色的表演者
+                                            res                           // 资源对象
+                                    );
+                                    
+                                    // 添加曲目到容器
+                                    audioContainer.addItem(musicTrack);
+                                    addedCount++;
+                                    
+                                    // 添加曲目到内容树
+                                    ContentTree.addNode(trackId,
+                                            new ContentNode(trackId, musicTrack, filePath));
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    // 非CUE文件，正常处理
+                    // 创建MusicTrack对象
+                    String trackId = "api_track_" + audioContainer.getId() + "_" + audioInfo.getId();
+                    String title = audioInfo.getTitle() != null ? audioInfo.getTitle() : "未知标题";
+                    String artist = audioInfo.getArtist() != null ? audioInfo.getArtist() : "未知艺术家";
+                    String album = audioInfo.getAlbum() != null ? audioInfo.getAlbum() : "未知专辑";
+                    String filePath = audioInfo.getPath() != null ? audioInfo.getPath() : "";
 
-                // 创建资源对象
-                Res res = new Res(
-                        new MimeType("audio", "mpeg"),
-                        (long) audioInfo.getBitrate() * audioInfo.getDuration() / 8, // 计算文件大小
-                        filePath
-                );
+                    // 创建资源对象
+                    Res res = new Res(
+                            new MimeType("audio", "mpeg"),
+                            (long) audioInfo.getBitrate() * audioInfo.getDuration() / 8, // 计算文件大小
+                            filePath
+                    );
 
-                // 创建音乐曲目项
-                MusicTrack musicTrack = new MusicTrack(
-                        trackId,                      // 唯一的项目ID
-                        audioContainer.getId(),       // 父容器ID
-                        title,                        // 标题
-                        artist,                       // 创作者
-                        album,                        // 专辑
-                        new PersonWithRole(artist, "Performer"), // 带角色的表演者
-                        res                           // 资源对象
-                );
+                    // 创建音乐曲目项
+                    MusicTrack musicTrack = new MusicTrack(
+                            trackId,                      // 唯一的项目ID
+                            audioContainer.getId(),       // 父容器ID
+                            title,                        // 标题
+                            artist,                       // 创作者
+                            album,                        // 专辑
+                            new PersonWithRole(artist, "Performer"), // 带角色的表演者
+                            res                           // 资源对象
+                    );
 
-                // 添加曲目到容器
-                audioContainer.addItem(musicTrack);
+                    // 添加曲目到容器
+                    audioContainer.addItem(musicTrack);
+                    addedCount++;
 
-                // 添加曲目到内容树
-                ContentTree.addNode(trackId,
-                        new ContentNode(trackId, musicTrack, filePath));
+                    // 添加曲目到内容树
+                    ContentTree.addNode(trackId,
+                            new ContentNode(trackId, musicTrack, filePath));
+                }
 
             } catch (Exception e) {
                 Log.d(LOGTAG, "添加API音乐到容器失败: " + e.getMessage());
@@ -1020,7 +1108,7 @@ public class EversoloLibraryService extends Service {
         }
 
         // 更新容器的子项计数
-        audioContainer.setChildCount(audioContainer.getChildCount() + audioInfoList.size());
+        audioContainer.setChildCount(audioContainer.getChildCount() + addedCount);
     }
 
     /**
@@ -1068,7 +1156,7 @@ public class EversoloLibraryService extends Service {
 
         for (ComposerInfo composerInfo : composerInfoList) {
             // 使用更简单的ID格式，避免复合ID可能导致的问题
-            String composerFoldId = "composer_" + composerInfo.getArtistId();
+            String composerFoldId = "composer_" + composerInfo.getId();
 
             // 创建作曲家子容器
             Container composerSubContainer = new Container(
@@ -1156,7 +1244,7 @@ public class EversoloLibraryService extends Service {
                                 }
 
                                 // 使用albumTypeId参数调用getAlbumMusics接口获取该作曲家的专辑歌曲
-                                loadAlbumMusicsForArtist(albumSubContainer, albumSubFoldId, albumInfo, String.valueOf(composerInfo.getArtistId()), 1);
+                                loadAlbumMusicsForArtist(albumSubContainer, albumSubFoldId, albumInfo, String.valueOf(composerInfo.getId()), 1);
                             }
 
                             // 更新作曲家专辑容器的子容器计数
@@ -1265,7 +1353,7 @@ public class EversoloLibraryService extends Service {
 
         for (GenreInfo genreInfo : genreInfoList) {
             // 使用更简单的ID格式，避免复合ID可能导致的问题
-            String genreFoldId = "genre_" + genreInfo.getGenreId();
+            String genreFoldId = "genre_" + genreInfo.getId();
 
             // 创建流派子容器
             Container genreSubContainer = new Container(
@@ -1338,7 +1426,7 @@ public class EversoloLibraryService extends Service {
             if (ApiClient.getInstance() != null) {
                 Map<String, String> params = new HashMap<>();
                 // genres参数应该是JSON格式的数组字符串
-                params.put("genres", "[" + genreInfo.getGenreId() + "]");
+                params.put("genres", "[" + genreInfo.getId() + "]");
                 params.put("start", "0");
                 params.put("count", "100");
 
@@ -1365,7 +1453,7 @@ public class EversoloLibraryService extends Service {
             // 使用/getGenreAlbumList接口获取该流派的专辑列表
             if (ApiClient.getInstance() != null) {
                 Map<String, String> params = new HashMap<>();
-                params.put("id", String.valueOf(genreInfo.getGenreId()));
+                params.put("id", String.valueOf(genreInfo.getId()));
                 params.put("start", "0");
                 params.put("count", "100");
 
@@ -1403,7 +1491,7 @@ public class EversoloLibraryService extends Service {
                                 }
 
                                 // 为专辑加载歌曲，albumType传2（流派类型），albumTypeId传流派ID
-                                loadAlbumMusicsForArtist(albumSubContainer, albumSubFoldId, albumInfo, String.valueOf(genreInfo.getGenreId()), 2);
+                                loadAlbumMusicsForArtist(albumSubContainer, albumSubFoldId, albumInfo, String.valueOf(genreInfo.getId()), 2);
                             }
 
                             // 更新流派专辑容器的子容器计数
@@ -1458,7 +1546,7 @@ public class EversoloLibraryService extends Service {
 
                 // 打印专辑列表内容，用于调试
                 for (AlbumInfo album : albumInfoList) {
-                    Log.d(LOGTAG, "专辑: " + album.getAlbumId() + " - " + album.getName() + " (" + album.getArtist() + ")");
+                    Log.d(LOGTAG, "专辑: " + album.getId() + " - " + album.getName() + " (" + album.getArtist() + ")");
                 }
 
                 // 调用回调通知加载完成
