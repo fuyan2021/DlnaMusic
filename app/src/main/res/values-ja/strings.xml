@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="appName">Droid DLNA</string>
+    <string name="deviceDetails">デバイスの詳細</string>
+    <string name="searchLAN">ネットワークを検索</string>
+    <string name="switchRouter">ネットワークルーターを切り替える</string>
+    <string name="toggleDebugLogging">デバッグロギングを切り替える</string>
+    <string name="OK">OK</string>
+    <string name="searchingLAN">ネットワーク内のUPnPデバイスを検索中&#8230;</string>
+    <string name="enablingRouter">ネットワークルーターを有効化中&#8230;</string>
+    <string name="disablingRouter">ネットワークルーターを無効化中&#8230;</string>
+    <string name="errorSwitchingRouter">ルーターの切り替えエラー: </string>
+    <string name="enablingDebugLogging">デバッグロギングを有効化中&#8230;</string>
+    <string name="disablingDebugLogging">デバッグロギングを無効化中&#8230;</string>
+    <string name="deviceDetailsNotYetAvailable">デバイスの詳細を取得中です。しばらくお待ちください。</string>
+    <string name="search_lan">デバイスを検索</string>
+    <string name="toggle_debug_logging">デバッグロギングを切り替える</string>
+    <string name="searching_lan">ネットワーク内のUPnPデバイスを検索中&#8230;</string>
+    <string name="enabling_debug_logging">デバッグロギングを有効化中&#8230;</string>
+    <string name="disabling_debug_logging">デバッグロギングを無効化中&#8230;</string>
+    <string name="registering_demo_device">UPnPデバイスを登録中&#8230;</string>
+    <string name="create_demo_failed">デバイスの作成に失敗しました。ログを確認してください！</string>
+    <string name="sear_dmr">DMRを探す</string>
+    <string name="dialog_wait_msg">読み込み中&#8230;</string>
+    <string name="player_play_msg">再生</string>
+    <string name="player_pause_msg">一時停止</string>
+    <string name="ip_get_fail">IPアドレスの取得に失敗</string>
+
+    <!-- tab -->
+    <string name="device">デバイス</string>
+    <string name="content">コンテンツ</string>
+    <string name="control">コンソール</string>
+    <string name="setting">設定</string>
+
+    <!-- control -->
+    <string name="not_select_dev">デバイスを選択</string>
+    <string name="get_data_err">データの取得に失敗しました。再度試してください</string>
+    <string name="conn_err">接続の確立に失敗</string>
+    <string name="min_voc">すでに最小音量</string>
+    <string name="media_name_def">メディア名</string>
+    <string name="media_name_brief">メディアの説明</string>
+    <string name="media_init_time">00:00:00</string>
+    <string name="media_play_err">再生に失敗</string>
+
+    <!-- device -->
+    <string name="device_msg">メディアコンテンツサービス</string>
+    <string name="dmr_msg">プレイヤー</string>
+    <string name="exit">もう一度押してアプリケーションを終了</string>
+
+    <!-- imageDispaly -->
+    <string name="io_error">IOエラー</string>
+    <string name="decoding_error">画像のデコードエラー</string>
+    <string name="network_denied">ネットワークが弱すぎます</string>
+    <string name="oom_error">画像が大きすぎて読み込みに失敗</string>
+    <string name="unknown_error">不明なエラー</string>
+    <string name="info_first_image">最初の画像に到達</string>
+    <string name="info_last_image">最後の画像に到達</string>
+    <string name="info_image_slide_start">スライドショーの再生を開始</string>
+    <string name="info_image_slide_pause">スライドショーの再生を一時停止</string>
+    <string name="info_download_image">画像をダウンロードしました</string>
+    <string name="info_download_image_error">画像の保存に失敗</string>
+    <string name="info_share_image">画像を共有</string>
+
+    <!-- player -->
+    <string name="player_bt_return">戻る</string>
+    <string name="player_exit">もう一度戻るボタンを押してプレイヤーを終了</string>
+
+    <!-- setting -->
+    <string name="about_app">バージョン2.0.0</string>
+    <string name="open_msg">オン</string>
+    <string name="off_msg">オフ</string>
+    <string name="share_content">メディアコンテンツを共有</string>
+    <string name="share_content_on">コンテンツの共有を開始します。他のデバイスはDLNA/UPnPプロトコルを通じてローカルメディアファイルを表示できます</string>
+    <string name="share_content_off">コンテンツの共有を停止します。他のデバイスはDLNA/UPnPプロトコルを通じてローカルメディアファイルを表示できません</string>
+    <string name="share_content_setting">メディアコンテンツ共有設定</string>
+    <string name="share_content_setting_breif">家族や友人と好きなコンテンツを共有</string>
+    <string name="device_name">デバイス名</string>
+    <string name="dms_name">メディアサーバー名</string>
+    <string name="dms_name_breif">ローカルメディアサーバー名。他のデバイスで検索できます</string>
+    <string name="device_local">DroidDLNA Media Server</string>
+    <string name="player">メディアプレイヤー</string>
+    <string name="player_on">ローカルプレイヤーサービスを有効にします。他のデバイスはDLNA/UPnPプロトコルを通じてメディアファイルをこのデバイスにプッシュできます</string>
+    <string name="player_off">ローカルプレイヤーサービスを無効にします。他のデバイスはDLNA/UPnPプロトコルを通じてメディアファイルをこのデバイスにプッシュできません</string>
+    <string name="player_name">プレイヤー名</string>
+    <string name="player_name_breif">ローカルプレイヤー名。他のデバイスで検索できます</string>
+    <string name="player_name_local">DroidDLNA Local Render</string>
+    <string name="net_setting">ネットワーク設定</string>
+    <string name="net_setting_breif">無線ネットワークアクセスポイントの設定と管理</string>
+    <string name="slideshow">スライドショー</string>
+    <string name="slideshow_breif">スライドショーの再生間隔を設定</string>
+    <string name="thumbnails">ズームアイコン</string>
+    <string name="thumbnails_breif">ズームアイコンを非表示</string>
+    <string name="setting_msg">設定</string>
+    <string name="about_brief">DroidDLNAは、機能満載のUPnP/DLNAコントロールポイント、UPnPメディアレンダラー、UPnPメディアサーバーです。このアプリは、Java環境用のUPnP互換ソフトウェアスタックであるCling 2.0に基づいています。
+ スマートフォン上の音楽、動画、画像を、ネットワーク上のデバイス（DLNAテレビ、XBMC、WMPなど）や外部UPnPメディアサーバーから簡単に再生できます。スマートフォン/タブレットのメディアをこれらのデバイスで再生しましょう。</string>
+
+    <!-- Menu -->
+    <string name="menu_exit">終了</string>
+
+    <!-- Container Titles -->
+    <string name="container_artists">アーティスト</string>
+    <string name="container_albums">アルバム</string>
+    <string name="container_composers">作曲家</string>
+    <string name="container_genres">ジャンル</string>
+
+</resources>

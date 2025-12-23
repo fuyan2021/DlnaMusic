@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="appName">Droid DLNA</string>
+    <string name="deviceDetails">Детали устройства</string>
+    <string name="searchLAN">Поиск в сети</string>
+    <string name="switchRouter">Переключить сетевой маршрутизатор</string>
+    <string name="toggleDebugLogging">Переключить отладочную регистрацию</string>
+    <string name="OK">OK</string>
+    <string name="searchingLAN">Поиск устройств UPnP в сети&#8230;</string>
+    <string name="enablingRouter">Включение сетевого маршрутизатора&#8230;</string>
+    <string name="disablingRouter">Отключение сетевого маршрутизатора&#8230;</string>
+    <string name="errorSwitchingRouter">Ошибка при переключении маршрутизатора: </string>
+    <string name="enablingDebugLogging">Включение отладочной регистрации&#8230;</string>
+    <string name="disablingDebugLogging">Отключение отладочной регистрации&#8230;</string>
+    <string name="deviceDetailsNotYetAvailable">Детали устройства обнаруживаются, пожалуйста, подождите.</string>
+    <string name="search_lan">Поиск устройств</string>
+    <string name="toggle_debug_logging">Переключить отладочную регистрацию</string>
+    <string name="searching_lan">Поиск устройств UPnP в сети&#8230;</string>
+    <string name="enabling_debug_logging">Включение отладочной регистрации&#8230;</string>
+    <string name="disabling_debug_logging">Отключение отладочной регистрации&#8230;</string>
+    <string name="registering_demo_device">Регистрация устройства UPnP&#8230;</string>
+    <string name="create_demo_failed">Создание устройства не удалось, проверьте журнал!</string>
+    <string name="sear_dmr">Найти DMR</string>
+    <string name="dialog_wait_msg">Загрузка&#8230;</string>
+    <string name="player_play_msg">Воспроизвести</string>
+    <string name="player_pause_msg">Пауза</string>
+    <string name="ip_get_fail">Не удалось получить IP-адрес</string>
+
+    <!-- tab -->
+    <string name="device">Устройство</string>
+    <string name="content">Контент</string>
+    <string name="control">Консоль</string>
+    <string name="setting">Настройки</string>
+
+    <!-- control -->
+    <string name="not_select_dev">Выберите устройство</string>
+    <string name="get_data_err">Не удалось получить данные, попробуйте снова</string>
+    <string name="conn_err">Не удалось установить соединение</string>
+    <string name="min_voc">Уже минимальная громкость</string>
+    <string name="media_name_def">Название медиа</string>
+    <string name="media_name_brief">Описание медиа</string>
+    <string name="media_init_time">00:00:00</string>
+    <string name="media_play_err">Ошибка воспроизведения</string>
+
+    <!-- device -->
+    <string name="device_msg">Сервис медиаконтента</string>
+    <string name="dmr_msg">Проигрыватель</string>
+    <string name="exit">Нажмите снова, чтобы выйти из приложения</string>
+
+    <!-- imageDispaly -->
+    <string name="io_error">Ошибка ввода/вывода</string>
+    <string name="decoding_error">Ошибка декодирования изображения</string>
+    <string name="network_denied">Слабая сеть</string>
+    <string name="oom_error">Изображение слишком большое, не удалось загрузить</string>
+    <string name="unknown_error">Неизвестная ошибка</string>
+    <string name="info_first_image">Уже первое изображение</string>
+    <string name="info_last_image">Уже последнее изображение</string>
+    <string name="info_image_slide_start">Начало слайд-шоу изображений</string>
+    <string name="info_image_slide_pause">Пауза слайд-шоу изображений</string>
+    <string name="info_download_image">Изображение загружено в</string>
+    <string name="info_download_image_error">Не удалось сохранить изображение</string>
+    <string name="info_share_image">Поделиться изображением</string>
+
+    <!-- player -->
+    <string name="player_bt_return">Назад</string>
+    <string name="player_exit">Нажмите снова кнопку возврата, чтобы выйти из проигрывателя</string>
+
+    <!-- setting -->
+    <string name="about_app">Версия 2.0.0</string>
+    <string name="open_msg">Включено</string>
+    <string name="off_msg">Выключено</string>
+    <string name="share_content">Поделиться медиаконтентом</string>
+    <string name="share_content_on">Запустите обмен контентом, другие устройства могут просматривать локальные медиафайлы через протокол DLNA/UPnP</string>
+    <string name="share_content_off">Остановите обмен контентом, другие устройства не могут просматривать локальные медиафайлы через протокол DLNA/UPnP</string>
+    <string name="share_content_setting">Настройки обмена медиаконтентом</string>
+    <string name="share_content_setting_breif">Поделитесь своими любимыми контентами с семьей и друзьями</string>
+    <string name="device_name">Имя устройства</string>
+    <string name="dms_name">Имя медиасервера</string>
+    <string name="dms_name_breif">Имя локального медиасервера, которое можно найти на других устройствах</string>
+    <string name="device_local">DroidDLNA Media Server</string>
+    <string name="player">Медиапроигрыватель</string>
+    <string name="player_on">Запустите локальную службу проигрывателя, другие устройства могут отправлять медиафайлы на это устройство через протокол DLNA/UPnP</string>
+    <string name="player_off">Остановите локальную службу проигрывателя, другие устройства не могут отправлять медиафайлы на это устройство через протокол DLNA/UPnP</string>
+    <string name="player_name">Имя проигрывателя</string>
+    <string name="player_name_breif">Имя локального проигрывателя, которое можно найти на других устройствах</string>
+    <string name="player_name_local">DroidDLNA Local Render</string>
+    <string name="net_setting">Сетевые настройки</string>
+    <string name="net_setting_breif">Настройка и управление беспроводными точками доступа</string>
+    <string name="slideshow">Слайд-шоу</string>
+    <string name="slideshow_breif">Установите интервал воспроизведения слайд-шоу</string>
+    <string name="thumbnails">Иконка масштабирования</string>
+    <string name="thumbnails_breif">Скрыть иконку масштабирования</string>
+    <string name="setting_msg">Настройки</string>
+    <string name="about_brief">DroidDLNA - это полнофункциональная контрольная точка UPnP/DLNA, медиапроигрыватель UPnP и медиасервер UPnP. Это приложение основано на Cling 2.0, который является совместимым со стеком UPnP для среды Java.
+ Легко воспроизводите свою музыку, видео и изображения на своем телефоне и устройствах в сети (телевизоры DLNA, XBMC, WMP и т.д.), с внешних медиасерверов UPnP. Воспроизводите медиа с телефона/планшета на этих устройствах.</string>
+
+    <!-- Menu -->
+    <string name="menu_exit">Выход</string>
+
+    <!-- Container Titles -->
+    <string name="container_artists">Исполнители</string>
+    <string name="container_albums">Альбомы</string>
+    <string name="container_composers">Композиторы</string>
+    <string name="container_genres">Жанры</string>
+
+</resources>

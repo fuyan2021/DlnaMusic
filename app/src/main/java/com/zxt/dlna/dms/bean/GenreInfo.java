@@ -103,4 +103,5 @@ public class GenreInfo implements Serializable {
 	public void setPinyinName(String pinyinName) {
 		this.pinyinName = pinyinName;
 	}
+
 }

@@ -9,7 +9,6 @@ import android.os.Binder;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
-import android.text.TextUtils;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -19,18 +18,16 @@ import com.zxt.dlna.dms.bean.AlbumInfo;
 import com.zxt.dlna.dms.bean.ArtistInfo;
 import com.zxt.dlna.dms.bean.AudioInfo;
 import com.zxt.dlna.dms.bean.ComposerInfo;
-import com.zxt.dlna.dms.bean.CueInfo;
-import com.zxt.dlna.dms.bean.CueList;
 import com.zxt.dlna.dms.bean.GenreInfo;
 import com.zxt.dlna.util.AlbumContainer;
 import com.zxt.dlna.util.ApiClient;
 import com.zxt.dlna.util.ArtistContainer;
 import com.zxt.dlna.util.ComposerContainer;
-import com.zxt.dlna.util.CueUtils;
 import com.zxt.dlna.util.DmsSpUtil;
 import com.zxt.dlna.util.FileHelper;
 import com.zxt.dlna.util.GenreContainer;
 import com.zxt.dlna.util.SingleMusicContainer;
+import com.zxt.dlna.util.UpnpUtil;
 
 import org.fourthline.cling.android.AndroidUpnpService;
 import org.fourthline.cling.android.AndroidUpnpServiceImpl;
@@ -42,7 +39,7 @@ import org.fourthline.cling.support.model.container.Container;
 import org.fourthline.cling.support.model.item.MusicTrack;
 import org.seamless.util.MimeType;
 
-import java.io.File;
+import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -58,6 +55,7 @@ public class EversoloLibraryService extends Service {
     private MediaServer mediaServer;
     private static boolean serverPrepared = false;
     private final static String LOGTAG = "EversoloLibraryService";
+    private boolean isUpdating = false; // 防止并发更新
 
     private List<ArtistInfo> artistInfoList = new ArrayList<>();
     private List<AlbumInfo> albumInfoList = new ArrayList<>();
@@ -103,6 +101,196 @@ public class EversoloLibraryService extends Service {
     // 初始化流派容器
     private void initGenreContainer() {
         genreContainer = new GenreContainer();
+    }
+
+    /**
+     * 更新媒体服务器数据
+     * 重新请求接口更新所有节点数据
+     */
+    public void updateMediaServer() {
+        // 防止并发更新
+        if (isUpdating) {
+            Log.w(LOGTAG, "Media server is already updating");
+            return;
+        }
+
+        isUpdating = true;
+        Log.v(LOGTAG, "Starting media server update...");
+
+        // 在UI线程中显示更新开始的提示
+//        new Handler(Looper.getMainLooper()).post(() -> {
+//            Toast.makeText(getApplicationContext(), "正在更新媒体库...", Toast.LENGTH_SHORT).show();
+//        });
+
+        // 重置所有媒体信息列表
+        artistInfoList.clear();
+        albumInfoList.clear();
+        composerInfoList.clear();
+        genreInfoList.clear();
+        audioInfoList.clear();
+
+        // 重置所有容器对象
+        singleMusicContainer = null;
+        artistContainer = null;
+        albumContainer = null;
+        composerContainer = null;
+        genreContainer = null;
+
+        // 重置ContentTree
+        ContentTree.resetContentTree();
+
+        // 重置准备标志，确保可以重新初始化
+        serverPrepared = false;
+
+        // 重新初始化所有容器
+        initSingleMusicContainer();
+        initArtistContainer();
+        initAlbumContainer();
+        initComposerContainer();
+        initGenreContainer();
+
+        // 获取内容树的根节点
+        ContentNode rootNode = ContentTree.getRootNode();
+
+        // 创建或更新音频容器
+        Container audioContainer = createOrUpdateAudioContainer(rootNode);
+
+        // 重新加载所有API数据
+        int[] pendingCallbacks = {4}; // 四个异步回调：艺术家、专辑、作曲家、流派
+        final Object lock = new Object();
+
+        // 加载API音乐列表
+        loadApiMusicList(audioContainer);
+
+        // 加载API艺术家列表（带回调）
+        loadApiArtistList(new ArtistListCallback() {
+            @Override
+            public void onArtistListLoaded() {
+                // 创建或更新艺术家容器
+                createOrUpdateArtistContainer(rootNode);
+                synchronized (lock) {
+                    pendingCallbacks[0]--;
+                    if (allCallbacksCompleted(pendingCallbacks)) {
+                        finishUpdate();
+                    }
+                }
+            }
+
+            @Override
+            public void onArtistListLoadFailed(String errorMsg) {
+                Log.e(LOGTAG, "加载艺术家列表失败: " + errorMsg);
+                synchronized (lock) {
+                    pendingCallbacks[0]--;
+                    if (allCallbacksCompleted(pendingCallbacks)) {
+                        finishUpdate();
+                    }
+                }
+            }
+        });
+
+        // 加载API专辑列表（带回调）
+        loadApiAlbumList(new AlbumListCallback() {
+            @Override
+            public void onAlbumListLoaded() {
+                // 创建或更新专辑容器
+                createOrUpdateAlbumContainer(rootNode);
+                synchronized (lock) {
+                    pendingCallbacks[1]--;
+                    if (allCallbacksCompleted(pendingCallbacks)) {
+                        finishUpdate();
+                    }
+                }
+            }
+
+            @Override
+            public void onAlbumListLoadFailed(String errorMsg) {
+                Log.e(LOGTAG, "加载专辑列表失败: " + errorMsg);
+                synchronized (lock) {
+                    pendingCallbacks[1]--;
+                    if (allCallbacksCompleted(pendingCallbacks)) {
+                        finishUpdate();
+                    }
+                }
+            }
+        });
+
+        // 加载API作曲家列表（带回调）
+        loadApiComposerList(new ComposerListCallback() {
+            @Override
+            public void onComposerListLoaded() {
+                // 创建或更新作曲家容器
+                createOrUpdateComposerContainer(rootNode);
+                synchronized (lock) {
+                    pendingCallbacks[2]--;
+                    if (allCallbacksCompleted(pendingCallbacks)) {
+                        finishUpdate();
+                    }
+                }
+            }
+
+            @Override
+            public void onComposerListLoadFailed(String errorMsg) {
+                Log.e(LOGTAG, "加载作曲家列表失败: " + errorMsg);
+                synchronized (lock) {
+                    pendingCallbacks[2]--;
+                    if (allCallbacksCompleted(pendingCallbacks)) {
+                        finishUpdate();
+                    }
+                }
+            }
+        });
+
+        // 加载API流派列表（带回调）
+        loadApiGenreList(new GenreListCallback() {
+            @Override
+            public void onGenreListLoaded() {
+                // 创建或更新流派容器
+                createOrUpdateGenreContainer(rootNode);
+                synchronized (lock) {
+                    pendingCallbacks[3]--;
+                    if (allCallbacksCompleted(pendingCallbacks)) {
+                        finishUpdate();
+                    }
+                }
+            }
+
+            @Override
+            public void onGenreListLoadFailed(String errorMsg) {
+                Log.e(LOGTAG, "加载流派列表失败: " + errorMsg);
+                synchronized (lock) {
+                    pendingCallbacks[3]--;
+                    if (allCallbacksCompleted(pendingCallbacks)) {
+                        finishUpdate();
+                    }
+                }
+            }
+        });
+    }
+
+    /**
+     * 检查所有回调是否都已完成
+     */
+    private boolean allCallbacksCompleted(int[] pendingCallbacks) {
+        for (int pending : pendingCallbacks) {
+            if (pending > 0) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * 完成更新操作
+     */
+    private void finishUpdate() {
+        serverPrepared = true;
+        isUpdating = false;
+        Log.v(LOGTAG, "Media server update completed");
+
+        // 在UI线程中显示更新完成的提示
+        new Handler(Looper.getMainLooper()).post(() -> {
+            Toast.makeText(getApplicationContext(), "媒体库更新完成", Toast.LENGTH_SHORT).show();
+        });
     }
 
     // 添加服务绑定状态标志
@@ -213,6 +401,19 @@ public class EversoloLibraryService extends Service {
         DmsSpUtil.setServerOn(getApplicationContext(), true);
 
         try {
+            // 获取并设置IP地址
+            try {
+                String ipAddress = UpnpUtil.getIP();
+                if (ipAddress != null && !ipAddress.isEmpty()) {
+                    BaseApplication.setHostAddress(ipAddress);
+                    Log.d(LOGTAG, "Set host address: " + ipAddress);
+                } else {
+                    Log.w(LOGTAG, "Failed to get IP address");
+                }
+            } catch (SocketException e) {
+                Log.e(LOGTAG, "Error getting IP address", e);
+            }
+
             Context applicationContext = getApplicationContext();
             if (applicationContext != null) {
                 applicationContext.bindService(
@@ -406,7 +607,7 @@ public class EversoloLibraryService extends Service {
             audioContainer = new Container(
                     ContentTree.AUDIO_ID,         // 容器ID
                     ContentTree.ROOT_ID,          // 父容器ID
-                    "Audios",                    // 容器标题
+                    getApplicationContext().getString(R.string.container_audios),  // 容器标题
                     "GNaP MediaServer",          // 创建者
                     new DIDLObject.Class("object.container"), // 容器类型
                     0                            // 子项计数
@@ -436,7 +637,7 @@ public class EversoloLibraryService extends Service {
             Container artistContainer = new Container(
                     ContentTree.ARTIST_ID,        // 容器ID
                     ContentTree.ROOT_ID,         // 父容器ID
-                    "artists",                   // 容器标题
+                    getString(R.string.container_artists),   // 容器标题
                     "GNaP MediaServer",         // 创建者
                     new DIDLObject.Class("object.container"), // 容器类型
                     0                           // 子项计数
@@ -476,6 +677,18 @@ public class EversoloLibraryService extends Service {
             );
             artistSubContainer.setRestricted(true);
             artistSubContainer.setWriteStatus(WriteStatus.NOT_WRITABLE);
+
+            // 设置艺术家图片URL
+            try {
+                // 构建艺术家图片URL
+                String imageUrl = String.format("http://127.0.0.1:9529/ZidooMusicControl/v2/getImage?id=%d&musicType=0&type=2&target=0x020",
+                        artistInfo.getId());
+                // 添加albumArtURI属性
+                artistSubContainer.addProperty(new org.fourthline.cling.support.model.DIDLObject.Property.UPNP.ALBUM_ART_URI(
+                        new java.net.URI(imageUrl)));
+            } catch (Exception e) {
+                Log.e(LOGTAG, "设置艺术家图片URL失败: " + e.getMessage());
+            }
 
             // 关键：将子容器添加到父容器的子容器列表中
             artistContainer.addContainer(artistSubContainer);
@@ -630,7 +843,7 @@ public class EversoloLibraryService extends Service {
             Container albumContainer = new Container(
                     ContentTree.ALBUM_ID,        // 容器ID
                     ContentTree.ROOT_ID,         // 父容器ID
-                    "albums",                   // 容器标题
+                    getString(R.string.container_albums),   // 容器标题
                     "GNaP MediaServer",         // 创建者
                     new DIDLObject.Class("object.container"), // 容器类型
                     0                           // 子项计数
@@ -671,6 +884,18 @@ public class EversoloLibraryService extends Service {
             albumSubContainer.setRestricted(true);
             albumSubContainer.setWriteStatus(WriteStatus.NOT_WRITABLE);
 
+            // 设置专辑图片URL
+            try {
+                // 构建专辑图片URL
+                String imageUrl = String.format("http://127.0.0.1:9529/ZidooMusicControl/v2/getImage?id=%d&musicType=0&type=1&target=0x010",
+                        albumInfo.getId());
+                // 添加albumArtURI属性
+                albumSubContainer.addProperty(new org.fourthline.cling.support.model.DIDLObject.Property.UPNP.ALBUM_ART_URI(
+                        new java.net.URI(imageUrl)));
+            } catch (Exception e) {
+                Log.e(LOGTAG, "设置专辑图片URL失败: " + e.getMessage());
+            }
+
             // 关键：将子容器添加到父容器的子容器列表中
             albumContainer.addContainer(albumSubContainer);
             albumChildCount++;
@@ -699,27 +924,45 @@ public class EversoloLibraryService extends Service {
         if (songs == null || songs.isEmpty()) {
             return;
         }
-
+        Map<String, String> namesMap = new HashMap<>();
         int trackCount = 0;
         for (AudioInfo song : songs) {
             // 创建资源对象
             long fileSize = 0;
+            // 创建音乐曲目项
+            String title = song.getTitle() != null ? song.getTitle() : "未知标题";
+            if (song.isDsf() || "dsf".equals(song.getExtension()) || "sacd".equals(song.getExtension()) || "dsd".equals(song.getExtension()) || "iso".equals(song.getExtension())) {
+                continue;
+            }
+            // 检查是否为CUE文件
+            if (song.isCue()) {
+                // 处理CUE文件
+                String filePath = song.getPath() != null ? song.getPath() : "";
+                if (!filePath.isEmpty() && namesMap.containsKey(filePath)) {
+                    continue;
+                }
+                title = song.getAlbum();
+                namesMap.put(filePath, song.getAlbum());
+            }
             try {
                 fileSize = FileHelper.getFileSize(song.getPath());
             } catch (Exception e) {
                 Log.e(LOGTAG, "获取文件大小失败: " + e.getMessage());
             }
+            String path = song.getPath() != null ? song.getPath() : "";
+            String filePath = !path.isEmpty() ? path : song.getUrl();
+            String uid = containerId + "_track" + (trackCount + 1);
+            String httpPath = "http://" + mediaServer.getAddress() + "/" + uid;
             Res res = new Res(
                     new MimeType("audio", "mpeg"),
                     fileSize, // 使用真实的文件大小
-                    song.getPath() // 使用真实的歌曲URI
+                    httpPath // 使用真实的歌曲URI
             );
 
-            // 创建音乐曲目项
             MusicTrack track = new MusicTrack(
-                    containerId + "_track" + (trackCount + 1),       // 唯一的项目ID
+                    uid,       // 唯一的项目ID
                     containerId,                    // 父容器ID
-                    song.getTitle(), // 歌曲标题
+                    title, // 歌曲标题
                     song.getArtist(),                     // 创作者
                     albumInfo.getName(),                      // 专辑
                     new PersonWithRole(song.getArtist(), "Performer"), // 带角色的表演者
@@ -732,7 +975,7 @@ public class EversoloLibraryService extends Service {
 
             // 添加曲目到内容树
             ContentTree.addNode(track.getId(),
-                    new ContentNode(track.getId(), track, song.getPath()));
+                    new ContentNode(track.getId(), track, filePath));
         }
 
         // 更新容器的子项计数
@@ -995,40 +1238,31 @@ public class EversoloLibraryService extends Service {
         int addedCount = 0;
         Map<String, String> namesMap = new HashMap<>();
         for (AudioInfo audioInfo : audioInfoList) {
-            if (audioInfo.isDsf() || "sacd".equals(audioInfo.getExtension()) || "dsd".equals(audioInfo.getExtension()) || "iso".equals(audioInfo.getExtension())) {
+            if (audioInfo.isDsf() || "dsf".equals(audioInfo.getExtension()) || "sacd".equals(audioInfo.getExtension()) || "dsd".equals(audioInfo.getExtension()) || "iso".equals(audioInfo.getExtension())) {
                 continue;
             }
             try {
+                String title = audioInfo.getTitle() != null ? audioInfo.getTitle().trim() : "未知标题";
                 // 检查是否为CUE文件
                 if (audioInfo.isCue()) {
                     // 处理CUE文件
                     String filePath = audioInfo.getPath() != null ? audioInfo.getPath() : "";
-                    Log.d(LOGTAG, "处理CUE文件: " + filePath);
                     if (!filePath.isEmpty() && namesMap.containsKey(filePath)) {
                         continue;
                     }
-                    namesMap.put(filePath, audioInfo.getTitle());
+                    title = audioInfo.getAlbum();
+                    namesMap.put(filePath, audioInfo.getAlbum());
                 }
                 // 非CUE文件，正常处理
 
                 // 创建MusicTrack对象
                 String trackId = "api_track_" + audioContainer.getId() + "_" + audioInfo.getId();
-                String title = audioInfo.getTitle() != null ? audioInfo.getTitle() : "未知标题";
                 String artist = audioInfo.getArtist() != null ? audioInfo.getArtist() : "未知艺术家";
                 String album = audioInfo.getAlbum() != null ? audioInfo.getAlbum() : "未知专辑";
-                String filePath = audioInfo.getPath() != null ? audioInfo.getPath() : "";
-                Log.d(LOGTAG, "addApiMusicToContainer: uri" + audioInfo.getPath());
-                // 创建资源对象
-                // 对文件路径进行URL编码，以支持包含#符号等特殊字符的文件路径
-                String encodedFilePath = null;
-//                    try {
-//                        java.net.URI uri = new java.net.URI("file", null, filePath, null);
-//                        encodedFilePath = uri.toASCIIString().substring(7); // 去掉"file:"前缀
-//                    } catch (java.net.URISyntaxException e) {
-//                        // 如果URI创建失败，尝试手动替换#符号
-//                        encodedFilePath = filePath.replace("#", "%23");
-//                    }
-                encodedFilePath = filePath.replace("#", "%23");
+                String path = audioInfo.getPath() != null ? audioInfo.getPath() : "";
+                String filePath = !path.isEmpty() ? path : audioInfo.getUrl();
+                String httpPath = "http://" + mediaServer.getAddress() + "/" + trackId;
+
                 // 创建资源对象
                 long fileSize = 0;
                 try {
@@ -1039,7 +1273,7 @@ public class EversoloLibraryService extends Service {
                 Res res = new Res(
                         new MimeType("audio", "mpeg"),
                         fileSize, // 使用真实的文件大小
-                        filePath // 使用真实的歌曲URI
+                        httpPath // 使用真实的歌曲URI
                 );
 
                 // 创建音乐曲目项
@@ -1052,6 +1286,20 @@ public class EversoloLibraryService extends Service {
                         new PersonWithRole(artist, "Performer"), // 带角色的表演者
                         res                           // 资源对象
                 );
+                if (fileSize == 0 || title.endsWith(".")) {
+                    Log.d(LOGTAG, "添加到单曲容器的歌曲路径: " + title + "!!!" + filePath);
+                }
+                // 设置图片URL
+                try {
+                    // 构建图片URL
+                    String imageUrl = String.format("http://127.0.0.1:9529/ZidooMusicControl/v2/getImage?id=%d&musicType=%d&type=4&target=0x010",
+                            audioInfo.getId(), audioInfo.getType());
+                    // 添加albumArtURI属性
+                    musicTrack.addProperty(new org.fourthline.cling.support.model.DIDLObject.Property.UPNP.ALBUM_ART_URI(
+                            new java.net.URI(imageUrl)));
+                } catch (Exception e) {
+                    Log.e(LOGTAG, "设置图片URL失败: " + e.getMessage());
+                }
 
                 // 添加曲目到容器
                 audioContainer.addItem(musicTrack);
@@ -1060,7 +1308,6 @@ public class EversoloLibraryService extends Service {
                 // 添加曲目到内容树
                 ContentTree.addNode(trackId,
                         new ContentNode(trackId, musicTrack, filePath));
-
 
             } catch (Exception e) {
                 Log.d(LOGTAG, "添加API音乐到容器失败: " + e.getMessage());
@@ -1089,7 +1336,7 @@ public class EversoloLibraryService extends Service {
             Container composerContainer = new Container(
                     ContentTree.COMPOSER_ID,        // 容器ID
                     ContentTree.ROOT_ID,         // 父容器ID
-                    "composers",                   // 容器标题
+                    getString(R.string.container_composers),   // 容器标题
                     "GNaP MediaServer",         // 创建者
                     new DIDLObject.Class("object.container"), // 容器类型
                     0                           // 子项计数
@@ -1286,7 +1533,7 @@ public class EversoloLibraryService extends Service {
             Container genreContainer = new Container(
                     ContentTree.GENRE_ID,        // 容器ID
                     ContentTree.ROOT_ID,         // 父容器ID
-                    "genres",                   // 容器标题
+                    getString(R.string.container_genres),   // 容器标题
                     "GNaP MediaServer",         // 创建者
                     new DIDLObject.Class("object.container"), // 容器类型
                     0                           // 子项计数
@@ -1313,7 +1560,7 @@ public class EversoloLibraryService extends Service {
 
         for (GenreInfo genreInfo : genreInfoList) {
             // 使用更简单的ID格式，避免复合ID可能导致的问题
-            String genreFoldId = "genre_" + genreInfo.getId();
+            String genreFoldId = "genre_" + genreInfo.getGenreId();
 
             // 创建流派子容器
             Container genreSubContainer = new Container(
@@ -1386,7 +1633,7 @@ public class EversoloLibraryService extends Service {
             if (ApiClient.getInstance() != null) {
                 Map<String, String> params = new HashMap<>();
                 // genres参数应该是JSON格式的数组字符串
-                params.put("genres", "[" + genreInfo.getId() + "]");
+                params.put("genres", "[" + genreInfo.getGenreId() + "]");
                 params.put("needParse", String.valueOf(true));
                 params.put("start", "0");
                 params.put("count", "100");
@@ -1414,7 +1661,7 @@ public class EversoloLibraryService extends Service {
             // 使用/getGenreAlbumList接口获取该流派的专辑列表
             if (ApiClient.getInstance() != null) {
                 Map<String, String> params = new HashMap<>();
-                params.put("id", String.valueOf(genreInfo.getId()));
+                params.put("id", String.valueOf(genreInfo.getGenreId()));
                 params.put("start", "0");
                 params.put("count", "100");
 
@@ -1452,7 +1699,7 @@ public class EversoloLibraryService extends Service {
                                 }
 
                                 // 为专辑加载歌曲，albumType传2（流派类型），albumTypeId传流派ID
-                                loadAlbumMusicsForArtist(albumSubContainer, albumSubFoldId, albumInfo, String.valueOf(genreInfo.getId()), 2);
+                                loadAlbumMusicsForArtist(albumSubContainer, albumSubFoldId, albumInfo, String.valueOf(genreInfo.getGenreId()), 2);
                             }
 
                             // 更新流派专辑容器的子容器计数

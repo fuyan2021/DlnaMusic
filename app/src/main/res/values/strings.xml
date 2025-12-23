@@ -35,7 +35,7 @@
 
     <!-- control -->
     <string name="not_select_dev">choose device</string>
-    <string name="get_data_err">fail to get data，try again</string>
+    <string name="get_data_err">fail to get data, try again</string>
     <string name="conn_err">fail to get connection</string>
     <string name="min_voc">already lowest voice</string>
     <string name="media_name_def">media name</string>
@@ -71,8 +71,8 @@
     <string name="open_msg">on</string>
     <string name="off_msg">off</string>
     <string name="share_content">share media content</string>
-    <string name="share_content_on">start sharing content， other devices can check local media files with DLNA/Upnp protocols</string>
-    <string name="share_content_off">stop sharing content， other devices can not check local media files with DLNA/Upnp protocols</string>
+    <string name="share_content_on">start sharing content, other devices can check local media files with DLNA/Upnp protocols</string>
+    <string name="share_content_off">stop sharing content, other devices can not check local media files with DLNA/Upnp protocols</string>
     <string name="share_content_setting">set media content sharing</string>
     <string name="share_content_setting_breif">share content you prefer with families and friends</string>
     <string name="device_name">device name</string>
@@ -80,8 +80,8 @@
     <string name="dms_name_breif">you can find local media server name on other devices</string>
     <string name="device_local">DroidDLNA Media Server</string>
     <string name="player">media player</string>
-    <string name="player_on">start local player service， other devices can push media files to local device</string>
-    <string name="player_off">stop local player service， other devices can not push media files to local device</string>
+    <string name="player_on">start local player service, other devices can push media files to local device</string>
+    <string name="player_off">stop local player service, other devices can not push media files to local device</string>
     <string name="player_name">player name</string>
     <string name="player_name_breif">you can find local media player name on other devices</string>
     <string name="player_name_local">DroidDLNA Local Render</string>
@@ -96,5 +96,12 @@
 
     <!-- Menu -->
     <string name="menu_exit">exit</string>
+
+    <!-- Container Titles -->
+    <string name="container_artists">artists</string>
+    <string name="container_albums">albums</string>
+    <string name="container_composers">composers</string>
+    <string name="container_genres">genres</string>
+    <string name="container_audios">Audios</string>
 
 </resources>

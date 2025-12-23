@@ -15,6 +15,7 @@ import org.fourthline.cling.support.model.item.Item;
  * 2. 提供节点类型判断功能
  * 3. 存储节点的唯一标识符
  * 4. 对于项目类型，存储文件的完整路径
+ * 5. 支持容器内容的懒加载
  */
 public class ContentNode {
 		private Container container; // 容器对象，当节点为容器类型时使用
@@ -22,6 +23,17 @@ public class ContentNode {
 		private String id; // 节点的唯一标识符
 		private String fullPath; // 对于项目类型，存储文件的完整路径
 		private boolean isItem; // 标识节点是否为项目类型
+		
+		// 内容加载状态标志
+		private boolean isContentLoaded = false;
+		
+		// 内容加载器接口
+		public interface ContentLoader {
+			void loadContent(ContentNode node);
+		}
+		
+		// 内容加载器实例
+		private ContentLoader contentLoader;
 		
 		/**
 		 * 创建容器类型的内容节点
@@ -34,6 +46,23 @@ public class ContentNode {
 			this.container = container;
 			this.fullPath = null; // 容器没有文件路径
 			this.isItem = false; // 标识为非项目类型
+			this.isContentLoaded = true; // 默认已加载内容
+		}
+		
+		/**
+		 * 创建容器类型的内容节点并支持懒加载
+		 * 
+		 * @param id 节点的唯一标识符
+		 * @param container 容器对象
+		 * @param contentLoader 内容加载器，用于懒加载内容
+		 */
+		public ContentNode(String id, Container container, ContentLoader contentLoader) {
+			this.id = id;
+			this.container = container;
+			this.fullPath = null; // 容器没有文件路径
+			this.isItem = false; // 标识为非项目类型
+			this.isContentLoaded = false; // 初始化为未加载状态
+			this.contentLoader = contentLoader;
 		}
 		
 		/**
@@ -48,6 +77,7 @@ public class ContentNode {
 			this.item = item;
 			this.fullPath = fullPath; // 存储文件路径
 			this.isItem = true; // 标识为项目类型
+			this.isContentLoaded = true; // 项目类型节点内容已加载
 		}
 		
 		/**
@@ -65,6 +95,8 @@ public class ContentNode {
 		 * @return Container 容器对象，如果节点不是容器类型则可能为null
 		 */
 		public Container getContainer() {
+			// 确保容器内容已加载（懒加载机制）
+			ensureContentLoaded();
 			return container;
 		}
 		
@@ -96,5 +128,34 @@ public class ContentNode {
 		 */
 		public boolean isItem() {
 			return isItem;
+		}
+		
+		/**
+		 * 确保容器内容已加载
+		 * 线程安全的懒加载实现
+		 */
+		private synchronized void ensureContentLoaded() {
+			if (!isItem && !isContentLoaded && contentLoader != null) {
+				contentLoader.loadContent(this);
+				isContentLoaded = true;
+			}
+		}
+		
+		/**
+		 * 设置内容加载状态
+		 * 
+		 * @param loaded 内容是否已加载
+		 */
+		public void setContentLoaded(boolean loaded) {
+			this.isContentLoaded = loaded;
+		}
+		
+		/**
+		 * 检查内容是否已加载
+		 * 
+		 * @return boolean 内容是否已加载
+		 */
+		public boolean isContentLoaded() {
+			return isContentLoaded;
 		}
 }

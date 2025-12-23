@@ -42,11 +42,12 @@ public class AudioInfo implements Serializable {
     public static final int TAG_MEDIA = 0x0001;
 
     private Long id;//数据库ID
+    private int type;
     private Long hashcode;//数据库ID
     private long deviceId;//所属设备数据库ID
     private long folderId = -1;//所属设备数据库ID
     private String uri; // 文件的相对路径(设备挂载路径后的路径)
-
+    private String url;
     public String getTitle() {
         return title;
     }
@@ -788,4 +789,19 @@ public class AudioInfo implements Serializable {
     }
 
 
+    public int getType() {
+        return type;
+    }
+
+    public void setType(int type) {
+        this.type = type;
+    }
+
+    public String getUrl() {
+        return url;
+    }
+
+    public void setUrl(String url) {
+        this.url = url;
+    }
 }

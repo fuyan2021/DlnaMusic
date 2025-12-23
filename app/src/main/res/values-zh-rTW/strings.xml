@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="appName">DroidDLNA</string>
+    <string name="deviceDetails">裝置詳情</string>
+    <string name="searchLAN">搜尋網路</string>
+    <string name="switchRouter">切換網路路由</string>
+    <string name="toggleDebugLogging">切換debug logging</string>
+    <string name="OK">OK</string>
+    <string name="searchingLAN">正在搜尋網路中的Upnp裝置&#8230;</string>
+    <string name="enablingRouter">Enabling network router&#8230;</string>
+    <string name="disablingRouter">Disabling network router&#8230;</string>
+    <string name="errorSwitchingRouter">Error switching router: </string>
+    <string name="enablingDebugLogging">Enabling debug logging&#8230;</string>
+    <string name="disablingDebugLogging">Disabling debug logging&#8230;</string>
+    <string name="deviceDetailsNotYetAvailable">Device details are being discovered, please wait.</string>
+    <string name="search_lan">搜尋裝置</string>
+    <string name="toggle_debug_logging">Toggle debug logging</string>
+    <string name="searching_lan">正在搜尋網路中的Upnp裝置&#8230;</string>
+    <string name="enabling_debug_logging">Enabling debug logging&#8230;</string>
+    <string name="disabling_debug_logging">Disabling debug logging&#8230;</string>
+    <string name="registering_demo_device">Registering UPnP device&#8230;</string>
+    <string name="create_demo_failed">Creating of device failed, check the log!</string>
+    <string name="sear_dmr">Find DMR</string>
+    <string name="dialog_wait_msg">正在載入中&#8230;</string>
+    <string name="player_play_msg">播放</string>
+    <string name="player_pause_msg">暫停</string>
+    <string name="ip_get_fail">獲取IP地址失敗</string>
+
+    <!-- tab -->
+    <string name="device">裝置</string>
+    <string name="content">內容</string>
+    <string name="control">控制台</string>
+    <string name="setting">設定</string>
+
+    <!-- control -->
+    <string name="not_select_dev">請選擇裝置</string>
+    <string name="get_data_err">獲取數據失敗，請重新選擇文件</string>
+    <string name="conn_err">建立連接失敗</string>
+    <string name="min_voc">已經是最小聲音了</string>
+    <string name="media_name_def">媒體名稱</string>
+    <string name="media_name_brief">媒體簡介</string>
+    <string name="media_init_time">00:00:00</string>
+    <string name="media_play_err">播放失敗</string>
+    
+    <!-- device -->
+    <string name="device_msg">媒體內容服務</string>
+    <string name="dmr_msg">播放器</string>
+    <string name="exit">再按一次退出程序</string>
+
+    <!-- imageDispaly -->
+    <string name="io_error">IO錯誤</string>
+    <string name="decoding_error">圖片解碼錯誤</string>
+    <string name="network_denied">網路太不給力了</string>
+    <string name="oom_error">圖片過大 載入失敗</string>
+    <string name="unknown_error">未知錯誤</string>
+    <string name="info_first_image">到第一張圖片了</string>
+    <string name="info_last_image">到最後一張圖片了</string>
+    <string name="info_image_slide_start">放映圖片幻燈片開始</string>
+    <string name="info_image_slide_pause">暫停圖片幻燈片放映</string>
+    <string name="info_download_image">圖片已經下載到</string>
+    <string name="info_download_image_error">圖片保存失敗</string>
+    <string name="info_share_image">分享圖片</string>
+
+    <!-- player -->
+    <string name="player_bt_return">返回</string>
+    <string name="player_exit">再按一次返回鍵退出播放器</string>
+
+    <!-- setting -->
+    <string name="about_app">版本2.0.0</string>
+    <string name="open_msg">開</string>
+    <string name="off_msg">關</string>
+    <string name="share_content">共享媒體內容</string>
+    <string name="share_content_on">啟動共享內容，其他裝置可以通過DLNA/Upnp協議查看本機媒體文件</string>
+    <string name="share_content_off">停止共享內容，其他裝置不可以通過DLNA/Upnp協議查看本機媒體文件</string>
+    <string name="share_content_setting">共享媒體內容設定</string>
+    <string name="share_content_setting_breif">與家人朋友共享您喜歡的內容</string>
+    <string name="device_name">裝置名稱</string>
+    <string name="dms_name">媒體伺服器名稱</string>
+    <string name="dms_name_breif">本地媒體伺服器名稱，你可以在其他裝置上查找它</string>
+    <string name="device_local">DroidDLNA Media Server</string>
+    <string name="player">媒體播放器</string>
+    <string name="player_on">開啟本地播放器服務,其他裝置可以通過DLNA/Upnp協議推送媒體文件到本機</string>
+    <string name="player_off">關閉本地播放器服務,其他裝置不可以通過DLNA/Upnp協議推送媒體文件到本機</string>
+    <string name="player_name">播放器名稱</string>
+    <string name="player_name_breif">本地播放器名稱,你可以在其他裝置上查找它</string>
+    <string name="player_name_local">DroidDLNA Local Render</string>
+    <string name="net_setting">網路設定</string>
+    <string name="net_setting_breif">設定和管理無線網路接入點</string>
+    <string name="slideshow">幻燈片</string>
+    <string name="slideshow_breif">設定播放幻燈片的間隔時間</string>
+    <string name="thumbnails">縮放圖標</string>
+    <string name="thumbnails_breif">縮放圖標隱藏</string>
+    <string name="setting_msg">設定</string>
+    <string name="about_brief">DroidDLNA能夠讓多媒體分享變得更加便利，通過無線網手機和電視/電腦/等實現多媒體的共享，輕鬆互相瀏覽/播放/控制各裝置存儲中的音樂、視頻以及圖片等.
+DroidDLNA具備如下功能：
+1支持DLNA所有協議(包括：DMP,DMS,DMC,DMR)，集DLNA播放器、DLNA服務器、DLNA客戶端和DLNA播放控制器一體，功能豐富；
+ 2 通過wifi和乙太網自動掃描UPnP/DLNA媒體服務獲得共享資源；
+ 3 可以共享裝置上多媒體資源給別人，也可以使用其他DLNA裝置的多媒體資源；
+ 4 可以瀏覽，播放，控制多媒體資源，支持圖片和視頻縮略圖顯示。</string>
+
+    <!-- Menu -->
+    <string name="menu_exit">退出</string>
+
+    <!-- Container Titles -->
+    <string name="container_artists">歌手</string>
+    <string name="container_albums">專輯</string>
+    <string name="container_composers">作曲家</string>
+    <string name="container_genres">流派</string>
+
+</resources>
