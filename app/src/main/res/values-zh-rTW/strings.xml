@@ -104,6 +104,7 @@ DroidDLNA具備如下功能：
 
     <!-- Container Titles -->
     <string name="container_artists">歌手</string>
+    <string name="container_album_artists">專輯歌手</string>
     <string name="container_albums">專輯</string>
     <string name="container_composers">作曲家</string>
     <string name="container_genres">流派</string>

@@ -59,6 +59,7 @@ public class EversoloLibraryService extends Service {
     private boolean isUpdating = false; // 防止并发更新
 
     private List<ArtistInfo> artistInfoList = new ArrayList<>();
+    private List<ArtistInfo> albumArtistInfoList = new ArrayList<>();
     private List<AlbumInfo> albumInfoList = new ArrayList<>();
     private List<ComposerInfo> composerInfoList = new ArrayList<>();
     private List<GenreInfo> genreInfoList = new ArrayList<>();
@@ -72,6 +73,9 @@ public class EversoloLibraryService extends Service {
 
     // 专辑容器，用于管理从getAlbums接口获取的专辑列表
     private AlbumContainer albumContainer;
+
+    // 专辑艺术家容器，用于管理专辑艺术家列表
+    private ArtistContainer albumArtistContainer;
 
     // 作曲家容器，用于管理从getComposerList接口获取的作曲家列表
     private ComposerContainer composerContainer;
@@ -92,6 +96,11 @@ public class EversoloLibraryService extends Service {
     // 初始化专辑容器
     private void initAlbumContainer() {
         albumContainer = new AlbumContainer();
+    }
+
+    // 初始化专辑艺术家容器
+    private void initAlbumArtistContainer() {
+        albumArtistContainer = new ArtistContainer();
     }
 
     // 初始化作曲家容器
@@ -125,6 +134,7 @@ public class EversoloLibraryService extends Service {
 
         // 重置所有媒体信息列表
         artistInfoList.clear();
+        albumArtistInfoList.clear();
         albumInfoList.clear();
         composerInfoList.clear();
         genreInfoList.clear();
@@ -134,6 +144,7 @@ public class EversoloLibraryService extends Service {
         singleMusicContainer = null;
         artistContainer = null;
         albumContainer = null;
+        albumArtistContainer = null;
         composerContainer = null;
         genreContainer = null;
 
@@ -147,6 +158,7 @@ public class EversoloLibraryService extends Service {
         initSingleMusicContainer();
         initArtistContainer();
         initAlbumContainer();
+        initAlbumArtistContainer();
         initComposerContainer();
         initGenreContainer();
 
@@ -157,7 +169,7 @@ public class EversoloLibraryService extends Service {
         Container audioContainer = createOrUpdateAudioContainer(rootNode);
 
         // 重新加载所有API数据
-        int[] pendingCallbacks = {4}; // 四个异步回调：艺术家、专辑、作曲家、流派
+        int[] pendingCallbacks = {5}; // 五个异步回调：艺术家、专辑艺术家、专辑、作曲家、流派
         final Object lock = new Object();
 
         // 加载API音乐列表
@@ -189,6 +201,32 @@ public class EversoloLibraryService extends Service {
             }
         });
 
+        // 加载API专辑艺术家列表（带回调）
+        loadApiAlbumArtistList(new AlbumArtistListCallback() {
+            @Override
+            public void onAlbumArtistListLoaded() {
+                // 创建或更新专辑艺术家容器
+                createOrUpdateAlbumArtistContainer(rootNode);
+                synchronized (lock) {
+                    pendingCallbacks[1]--;
+                    if (allCallbacksCompleted(pendingCallbacks)) {
+                        finishUpdate();
+                    }
+                }
+            }
+
+            @Override
+            public void onAlbumArtistListLoadFailed(String errorMsg) {
+                Log.e(LOGTAG, "加载专辑艺术家列表失败: " + errorMsg);
+                synchronized (lock) {
+                    pendingCallbacks[1]--;
+                    if (allCallbacksCompleted(pendingCallbacks)) {
+                        finishUpdate();
+                    }
+                }
+            }
+        });
+
         // 加载API专辑列表（带回调）
         loadApiAlbumList(new AlbumListCallback() {
             @Override
@@ -196,7 +234,7 @@ public class EversoloLibraryService extends Service {
                 // 创建或更新专辑容器
                 createOrUpdateAlbumContainer(rootNode);
                 synchronized (lock) {
-                    pendingCallbacks[1]--;
+                    pendingCallbacks[2]--;
                     if (allCallbacksCompleted(pendingCallbacks)) {
                         finishUpdate();
                     }
@@ -207,7 +245,7 @@ public class EversoloLibraryService extends Service {
             public void onAlbumListLoadFailed(String errorMsg) {
                 Log.e(LOGTAG, "加载专辑列表失败: " + errorMsg);
                 synchronized (lock) {
-                    pendingCallbacks[1]--;
+                    pendingCallbacks[2]--;
                     if (allCallbacksCompleted(pendingCallbacks)) {
                         finishUpdate();
                     }
@@ -222,7 +260,7 @@ public class EversoloLibraryService extends Service {
                 // 创建或更新作曲家容器
                 createOrUpdateComposerContainer(rootNode);
                 synchronized (lock) {
-                    pendingCallbacks[2]--;
+                    pendingCallbacks[3]--;
                     if (allCallbacksCompleted(pendingCallbacks)) {
                         finishUpdate();
                     }
@@ -233,7 +271,7 @@ public class EversoloLibraryService extends Service {
             public void onComposerListLoadFailed(String errorMsg) {
                 Log.e(LOGTAG, "加载作曲家列表失败: " + errorMsg);
                 synchronized (lock) {
-                    pendingCallbacks[2]--;
+                    pendingCallbacks[3]--;
                     if (allCallbacksCompleted(pendingCallbacks)) {
                         finishUpdate();
                     }
@@ -248,7 +286,7 @@ public class EversoloLibraryService extends Service {
                 // 创建或更新流派容器
                 createOrUpdateGenreContainer(rootNode);
                 synchronized (lock) {
-                    pendingCallbacks[3]--;
+                    pendingCallbacks[4]--;
                     if (allCallbacksCompleted(pendingCallbacks)) {
                         finishUpdate();
                     }
@@ -259,7 +297,7 @@ public class EversoloLibraryService extends Service {
             public void onGenreListLoadFailed(String errorMsg) {
                 Log.e(LOGTAG, "加载流派列表失败: " + errorMsg);
                 synchronized (lock) {
-                    pendingCallbacks[3]--;
+                    pendingCallbacks[4]--;
                     if (allCallbacksCompleted(pendingCallbacks)) {
                         finishUpdate();
                     }
@@ -390,6 +428,7 @@ public class EversoloLibraryService extends Service {
         initSingleMusicContainer();
         initArtistContainer();
         initAlbumContainer();
+        initAlbumArtistContainer();
     }
 
     public void startServer() {
@@ -510,10 +549,13 @@ public class EversoloLibraryService extends Service {
         // 3. 初始化专辑容器
         initAlbumContainer();
 
-        // 4. 初始化作曲家容器
+        // 4. 初始化专辑艺术家容器
+        initAlbumArtistContainer();
+
+        // 5. 初始化作曲家容器
         initComposerContainer();
 
-        // 5. 初始化流派容器
+        // 6. 初始化流派容器
         initGenreContainer();
 
         // 6. 创建或更新音频容器
@@ -533,6 +575,21 @@ public class EversoloLibraryService extends Service {
             @Override
             public void onArtistListLoadFailed(String errorMsg) {
                 Log.e(LOGTAG, "加载艺术家列表失败: " + errorMsg);
+                // 即使加载失败，也完成准备工作，避免服务挂起
+                finishPreparation();
+            }
+        });
+        // 6. 加载API专辑艺术家列表（带回调）
+        loadApiAlbumArtistList(new AlbumArtistListCallback() {
+            @Override
+            public void onAlbumArtistListLoaded() {
+                // 创建或更新专辑艺术家容器
+                createOrUpdateAlbumArtistContainer(rootNode);
+            }
+
+            @Override
+            public void onAlbumArtistListLoadFailed(String errorMsg) {
+                Log.e(LOGTAG, "加载专辑艺术家列表失败: " + errorMsg);
                 // 即使加载失败，也完成准备工作，避免服务挂起
                 finishPreparation();
             }
@@ -626,6 +683,213 @@ public class EversoloLibraryService extends Service {
                     ContentTree.AUDIO_ID, audioContainer));
         }
         return audioContainer;
+    }
+
+    /**
+     * 创建或更新专辑艺术家容器
+     */
+    private void createOrUpdateAlbumArtistContainer(ContentNode rootNode) {
+        // 首先检查专辑艺术家容器是否已存在，如果不存在则创建
+        if (!ContentTree.hasNode(ContentTree.ALBUM_ARTIST_ID)) {
+            // 创建专辑艺术家容器对象
+            Container albumArtistContainer = new Container(
+                    ContentTree.ALBUM_ARTIST_ID,        // 容器ID
+                    ContentTree.ROOT_ID,         // 父容器ID
+                    getString(R.string.container_album_artists),   // 容器标题
+                    "GNaP MediaServer",         // 创建者
+                    new DIDLObject.Class("object.container"), // 容器类型
+                    0                           // 子项计数
+            );
+            albumArtistContainer.setRestricted(true);
+            albumArtistContainer.setWriteStatus(WriteStatus.NOT_WRITABLE);
+
+            // 将专辑艺术家容器添加到根节点
+            rootNode.getContainer().addContainer(albumArtistContainer);
+            // 更新根节点的子容器计数
+            rootNode.getContainer().setChildCount(rootNode.getContainer().getChildCount() + 1);
+            // 将专辑艺术家容器添加到内容树
+            ContentTree.addNode(ContentTree.ALBUM_ARTIST_ID, new ContentNode(
+                    ContentTree.ALBUM_ARTIST_ID, albumArtistContainer
+            ));
+        }
+
+        // 从ContentTree中获取专辑艺术家容器，确保使用的是同一个对象实例
+        Container albumArtistContainer = ContentTree.getNode(ContentTree.ALBUM_ARTIST_ID).getContainer();
+        // 为每个专辑艺术家创建子容器
+        // 首先清空现有子容器，确保重新创建
+        albumArtistContainer.getContainers().clear();
+        int albumArtistChildCount = 0;
+
+        for (ArtistInfo albumArtistInfo : albumArtistInfoList) {
+            // 使用更简单的ID格式，避免复合ID可能导致的问题
+            String albumArtistFoldId = "album_artist_" + albumArtistInfo.getId();
+
+            // 创建专辑艺术家子容器
+            Container albumArtistSubContainer = new Container(
+                    albumArtistFoldId,                   // 唯一的容器ID
+                    ContentTree.ALBUM_ARTIST_ID,          // 父容器ID
+                    albumArtistInfo.getName(),           // 容器标题（专辑艺术家名称）
+                    "GNaP MediaServer",            // 创建者
+                    new DIDLObject.Class("object.container"), // 容器类型
+                    2                               // 子项计数（专辑）
+            );
+            albumArtistSubContainer.setRestricted(true);
+            albumArtistSubContainer.setWriteStatus(WriteStatus.NOT_WRITABLE);
+
+            // 设置专辑艺术家图片URL
+            try {
+                // 构建专辑艺术家图片URL
+                String imageUrl = String.format("http://127.0.0.1:9529/ZidooMusicControl/v2/getImage?id=%d&musicType=0&type=2&target=0x020",
+                        albumArtistInfo.getId());
+                // 添加albumArtURI属性
+                albumArtistSubContainer.addProperty(new org.fourthline.cling.support.model.DIDLObject.Property.UPNP.ALBUM_ART_URI(
+                        new java.net.URI(imageUrl)));
+            } catch (Exception e) {
+                Log.e(LOGTAG, "设置专辑艺术家图片URL失败: " + e.getMessage());
+            }
+
+            // 关键：将子容器添加到父容器的子容器列表中
+            albumArtistContainer.addContainer(albumArtistSubContainer);
+            albumArtistChildCount++;
+
+            // 确保子容器存在于ContentTree中
+            if (!ContentTree.hasNode(albumArtistFoldId)) {
+                ContentTree.addNode(albumArtistFoldId, new ContentNode(albumArtistFoldId, albumArtistSubContainer));
+            } else {
+                // 更新ContentTree中的子容器引用
+                ContentTree.addNode(albumArtistFoldId, new ContentNode(albumArtistFoldId, albumArtistSubContainer));
+            }
+
+            // 为专辑艺术家子容器添加专辑子容器
+            String albumArtistAlbumId = albumArtistFoldId + "_albums";
+            Container albumArtistAlbumContainer = new Container(
+                    albumArtistAlbumId,                  // 唯一的容器ID
+                    albumArtistFoldId,                   // 父容器ID
+                    "专辑",                         // 容器标题
+                    "GNaP MediaServer",            // 创建者
+                    new DIDLObject.Class("object.container"), // 容器类型
+                    0                               // 子项计数
+            );
+
+            albumArtistAlbumContainer.setRestricted(true);
+            albumArtistAlbumContainer.setWriteStatus(WriteStatus.NOT_WRITABLE);
+
+            // 将专辑子容器添加到专辑艺术家子容器
+            albumArtistSubContainer.addContainer(albumArtistAlbumContainer);
+
+            // 确保专辑子容器存在于ContentTree中
+            if (!ContentTree.hasNode(albumArtistAlbumId)) {
+                ContentTree.addNode(albumArtistAlbumId, new ContentNode(albumArtistAlbumId, albumArtistAlbumContainer));
+            }
+
+            // 为专辑艺术家子容器添加单曲子容器
+            String albumArtistMusicContainerId = albumArtistFoldId + "_musics";
+            Container albumArtistMusicContainer = new Container(
+                    albumArtistMusicContainerId,         // 唯一的容器ID
+                    albumArtistFoldId,                   // 父容器ID
+                    "单曲",                         // 容器标题
+                    "GNaP MediaServer",            // 创建者
+                    new DIDLObject.Class("object.container"), // 容器类型
+                    0                               // 子项计数
+            );
+
+            albumArtistMusicContainer.setRestricted(true);
+            albumArtistMusicContainer.setWriteStatus(WriteStatus.NOT_WRITABLE);
+
+            // 将单曲子容器添加到专辑艺术家子容器
+            albumArtistSubContainer.addContainer(albumArtistMusicContainer);
+
+            // 确保单曲子容器存在于ContentTree中
+            if (!ContentTree.hasNode(albumArtistMusicContainerId)) {
+                ContentTree.addNode(albumArtistMusicContainerId, new ContentNode(albumArtistMusicContainerId, albumArtistMusicContainer));
+            }
+
+            // 使用/getArtistAlbums接口获取该艺术家的专辑列表
+            if (ApiClient.getInstance() != null) {
+                Map<String, String> params = new HashMap<>();
+                params.put("id", String.valueOf(albumArtistInfo.getId()));
+                params.put("start", "0");
+                params.put("count", "200");
+                params.put("artistType", "1");
+                ApiClient.getInstance().getArtistAlbums(params, new ApiClient.ApiCallback<ApiClient.AlbumResponse>() {
+                    @Override
+                    public void onSuccess(ApiClient.AlbumResponse response) {
+                        if (response != null && response.getArray() != null) {
+                            List<AlbumInfo> artistAlbums = response.getArray();
+                            int albumCount = 0;
+
+                            for (AlbumInfo albumInfo : artistAlbums) {
+                                // 为专辑创建子容器
+                                String albumSubFoldId = albumArtistAlbumId + "_album_" + albumInfo.getId();
+                                Container albumSubContainer = new Container(
+                                        albumSubFoldId,              // 唯一的容器ID
+                                        albumArtistAlbumId,               // 父容器ID
+                                        albumInfo.getName(),         // 容器标题（专辑名称）
+                                        "GNaP MediaServer",         // 创建者
+                                        new DIDLObject.Class("object.container"), // 容器类型
+                                        0                           // 子项计数
+                                );
+                                albumSubContainer.setRestricted(true);
+                                albumSubContainer.setWriteStatus(WriteStatus.NOT_WRITABLE);
+
+                                // 将专辑子容器添加到艺术家专辑容器
+                                albumArtistAlbumContainer.addContainer(albumSubContainer);
+                                albumCount++;
+
+                                // 确保专辑子容器存在于ContentTree中
+                                if (!ContentTree.hasNode(albumSubFoldId)) {
+                                    ContentTree.addNode(albumSubFoldId, new ContentNode(albumSubFoldId, albumSubContainer));
+                                } else {
+                                    // 更新ContentTree中的子容器引用
+                                    ContentTree.addNode(albumSubFoldId, new ContentNode(albumSubFoldId, albumSubContainer));
+                                }
+
+                                // 使用albumTypeId参数调用getAlbumMusics接口获取该艺术家的专辑歌曲
+                                loadAlbumMusicsForArtist(albumSubContainer, albumSubFoldId, albumInfo, String.valueOf(albumArtistInfo.getId()), 0);
+                            }
+
+                            // 更新艺术家专辑容器的子容器计数
+                            albumArtistAlbumContainer.setChildCount(albumCount);
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(String errorMsg) {
+                        Log.e(LOGTAG, "获取艺术家专辑列表失败: " + errorMsg);
+                    }
+                });
+
+                // 使用/getArtistMusics接口获取该艺术家的单曲列表
+                Map<String, String> musicParams = new HashMap<>();
+                musicParams.put("id", String.valueOf(albumArtistInfo.getId()));
+                musicParams.put("start", "0");
+                musicParams.put("count", "200");
+                params.put("artistType", "1");
+                params.put("needParse", String.valueOf(true));
+                ApiClient.getInstance().getArtistMusics(musicParams, new ApiClient.ApiCallback<ApiClient.MusicResponse>() {
+                    @Override
+                    public void onSuccess(ApiClient.MusicResponse response) {
+                        if (response != null && response.getArray() != null) {
+                            List<AudioInfo> artistMusics = response.getArray();
+
+                            // 将歌曲添加到歌曲列表子容器
+                            addApiMusicToContainer(artistMusics, albumArtistMusicContainer);
+
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(String errorMsg) {
+                        Log.e(LOGTAG, "获取艺术家单曲列表失败: " + errorMsg);
+                    }
+                });
+            } else {
+                Log.e(LOGTAG, "apiClient为空，无法获取艺术家专辑和单曲列表");
+            }
+        }
+
+        // 更新专辑艺术家容器的子容器计数
+        albumArtistContainer.setChildCount(albumArtistChildCount);
     }
 
     /**
@@ -932,7 +1196,7 @@ public class EversoloLibraryService extends Service {
             if (settingOpen && "iso".equals(song.getExtension())) {
                 continue;
             }
-            if (song.isDsf() || "dsf".equals(song.getExtension())) {
+            if (song.isDsf() || "dsf".equals(song.getExtension()) || "dff".equals(song.getExtension())) {
                 continue;
             }
             // 创建资源对象
@@ -1028,6 +1292,15 @@ public class EversoloLibraryService extends Service {
     }
 
     /**
+     * 加载API专辑艺术家列表的回调接口
+     */
+    private interface AlbumArtistListCallback {
+        void onAlbumArtistListLoaded();
+
+        void onAlbumArtistListLoadFailed(String errorMsg);
+    }
+
+    /**
      * 加载API专辑列表的回调接口
      */
     private interface AlbumListCallback {
@@ -1095,6 +1368,52 @@ public class EversoloLibraryService extends Service {
                 // 调用回调通知加载失败
                 if (callback != null) {
                     callback.onArtistListLoadFailed(errorMsg);
+                }
+            }
+        });
+    }
+
+    /**
+     * 加载API专辑艺术家列表
+     */
+    private void loadApiAlbumArtistList(final AlbumArtistListCallback callback) {
+        Map<String, String> params = new HashMap<>();
+        params.put("start", "0");
+        params.put("count", "200");
+        params.put("artistType", "1"); // 1表示专辑艺术家
+
+        // 添加API调试日志
+        ApiClient apiClient = ApiClient.getInstance();
+        Log.d(LOGTAG, "当前ApiClient baseUrl: " + apiClient.getBaseUrl());
+        Log.d(LOGTAG, "加载专辑艺术家列表请求参数: " + params.toString());
+
+        // 使用ArtistContainer加载专辑艺术家列表
+        albumArtistContainer.loadArtistList(params, new ArtistContainer.LoadCallback() {
+            @Override
+            public void onSuccess(List<ArtistInfo> albumArtistInfoList) {
+                Log.d(LOGTAG, "API专辑艺术家列表加载成功，共 " + albumArtistInfoList.size() + " 位专辑艺术家");
+
+                // 将API获取的专辑艺术家保存到全局变量
+                EversoloLibraryService.this.albumArtistInfoList = albumArtistInfoList;
+
+//                // 打印专辑艺术家列表内容，用于调试
+//                for (ArtistInfo albumArtist : albumArtistInfoList) {
+//                    Log.d(LOGTAG, "专辑艺术家: " + albumArtist.getId() + " - " + albumArtist.getName());
+//                }
+
+                // 调用回调通知加载完成
+                if (callback != null) {
+                    callback.onAlbumArtistListLoaded();
+                }
+            }
+
+            @Override
+            public void onFailure(String errorMsg) {
+                Log.e(LOGTAG, "API专辑艺术家列表加载失败: " + errorMsg, new Exception("API调用失败"));
+
+                // 调用回调通知加载失败
+                if (callback != null) {
+                    callback.onAlbumArtistListLoadFailed(errorMsg);
                 }
             }
         });
@@ -1244,7 +1563,7 @@ public class EversoloLibraryService extends Service {
             if (settingOpen && "iso".equals(audioInfo.getExtension())) {
                 continue;
             }
-            if (audioInfo.isDsf() || "dsf".equals(audioInfo.getExtension())) {
+            if (audioInfo.isDsf() || "dsf".equals(audioInfo.getExtension()) || "dff".equals(audioInfo.getExtension())) {
                 continue;
             }
             try {

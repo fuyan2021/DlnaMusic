@@ -100,6 +100,7 @@
 
     <!-- Container Titles -->
     <string name="container_artists">Исполнители</string>
+    <string name="container_album_artists">Альбомные артисты</string>
     <string name="container_albums">Альбомы</string>
     <string name="container_composers">Композиторы</string>
     <string name="container_genres">Жанры</string>

@@ -100,6 +100,7 @@
 
     <!-- Container Titles -->
     <string name="container_artists">Artisti</string>
+    <string name="container_album_artists">Artisti Album</string>
     <string name="container_albums">Album</string>
     <string name="container_composers">Compositori</string>
     <string name="container_genres">Generi</string>

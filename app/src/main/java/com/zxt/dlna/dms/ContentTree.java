@@ -29,6 +29,7 @@ public class ContentTree {
 	public final static String ARTIST_ID = "5"; // 艺术家容器ID
 	public final static String ARTIST_FOLD_ID = "6"; // 艺术家文件容器ID
 	public final static String ALBUM_ID = "7"; // 专辑容器ID
+	public final static String ALBUM_ARTIST_ID = "10"; // 专辑艺术家容器ID
 	public final static String COMPOSER_ID = "8"; // 作曲家容器ID
 	public final static String GENRE_ID = "9"; // 流派容器ID
 	public final static String VIDEO_PREFIX = "video-item-"; // 视频项目ID前缀

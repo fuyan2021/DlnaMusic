@@ -104,6 +104,7 @@ DroidDLNA oferuje następujące funkcje:
 
     <!-- Container Titles -->
     <string name="container_artists">Artyści</string>
+    <string name="container_album_artists">Artyści Albumów</string>
     <string name="container_albums">Albumy</string>
     <string name="container_composers">Kompozytorzy</string>
     <string name="container_genres">Gatunki</string>

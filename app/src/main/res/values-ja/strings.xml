@@ -100,6 +100,7 @@
 
     <!-- Container Titles -->
     <string name="container_artists">アーティスト</string>
+    <string name="container_album_artists">アルバムアーティスト</string>
     <string name="container_albums">アルバム</string>
     <string name="container_composers">作曲家</string>
     <string name="container_genres">ジャンル</string>
