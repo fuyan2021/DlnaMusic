@@ -5,6 +5,10 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.net.ConnectivityManager;
+import android.net.Network;
+import android.net.NetworkCapabilities;
+import android.net.NetworkRequest;
 import android.os.Binder;
 import android.os.Handler;
 import android.os.IBinder;
@@ -53,6 +57,9 @@ import java.util.Map;
  * 音乐库DLNA服务 - 后台Service实现
  **/
 public class EversoloLibraryService extends Service {
+    public final static String settingName = "cling_open_dsf_dff"; //1开，0关
+    //cling upnp服务开关
+    public static final String CLING_SETTING_NAME = "cling_settings";
     private AndroidUpnpService upnpService;
     private MediaServer mediaServer;
     private static boolean serverPrepared = false;
@@ -420,8 +427,23 @@ public class EversoloLibraryService extends Service {
     }
 
     @Override
+    public int onStartCommand(Intent intent, int flags, int startId) {
+        super.onStartCommand(intent, flags, startId);
+
+        // 处理来自广播接收器的刷新数据请求
+        if (intent != null && intent.getBooleanExtra("REFRESH_DATA", false)) {
+            Log.d(LOGTAG, "Received refresh data request from broadcast");
+            updateMediaServer();
+        }
+
+        // 如果服务被杀死，系统会尝试重启服务
+        return START_STICKY;
+    }
+
+    @Override
     public void onDestroy() {
         super.onDestroy();
+        Log.d(LOGTAG, "onDestroy: stopServer");
         // 停止服务器并清理资源
         stopServer();
     }
@@ -432,6 +454,31 @@ public class EversoloLibraryService extends Service {
         initArtistContainer();
         initAlbumContainer();
         initAlbumArtistContainer();
+        ConnectivityManager connectivityManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        if (connectivityManager == null) return;
+        NetworkRequest request = new NetworkRequest.Builder()
+                .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+                .build();
+
+        connectivityManager.registerNetworkCallback(request, new ConnectivityManager.NetworkCallback() {
+            @Override
+            public void onAvailable(Network network) {
+                // 网络已连接并可用
+                // TODO: 2025/12/24
+//                int status = Settings.System.getInt(getContentResolver(), CLING_SETTING_NAME, 0);
+//                if (status == 1) {
+//                    startServer();
+//                }
+                startServer();
+            }
+
+            @Override
+            public void onLost(Network network) {
+                // 网络已断开
+                stopServer();
+            }
+        });
+
     }
 
     /**
@@ -1198,11 +1245,13 @@ public class EversoloLibraryService extends Service {
         Map<String, String> namesMap = new HashMap<>();
         int trackCount = 0;
         for (AudioInfo song : songs) {
-            boolean settingOpen = Settings.System.getInt(getApplicationContext().getContentResolver(), "cling_open_iso", 0) == 1;
-            if (settingOpen && "iso".equals(song.getExtension())) {
-                continue;
+            boolean settingOpen = Settings.System.getInt(getApplicationContext().getContentResolver(), settingName, 0) == 1;
+            if (!settingOpen) {
+                if (song.isDsf() || "dsf".equals(song.getExtension()) || "dff".equals(song.getExtension())) {
+                    continue;
+                }
             }
-            if (song.isDsf() || "dsf".equals(song.getExtension()) || "dff".equals(song.getExtension())) {
+            if ("iso".equals(song.getExtension())) {
                 continue;
             }
             // 创建资源对象
@@ -1210,22 +1259,21 @@ public class EversoloLibraryService extends Service {
             // 创建音乐曲目项
             String title = song.getTitle() != null ? song.getTitle() : "未知标题";
             // 检查是否为CUE文件
-            if (song.isCue()) {
-                // 处理CUE文件
-                String filePath = song.getPath() != null ? song.getPath() : "";
-                if (!filePath.isEmpty() && namesMap.containsKey(filePath)) {
-                    continue;
-                }
-                title = song.getAlbum();
-                namesMap.put(filePath, song.getAlbum());
+            String path = song.getPath() != null ? song.getPath() : "";
+            String filePath = !path.isEmpty() ? path : song.getUrl();
+            if (!filePath.isEmpty() && namesMap.containsKey(filePath)) {
+                continue;
             }
+            if (song.isCue()) {
+                title = song.getAlbum();
+            }
+            namesMap.put(filePath, title);
             try {
                 fileSize = FileHelper.getFileSize(song.getPath());
             } catch (Exception e) {
                 Log.e(LOGTAG, "获取文件大小失败: " + e.getMessage());
             }
-            String path = song.getPath() != null ? song.getPath() : "";
-            String filePath = !path.isEmpty() ? path : song.getUrl();
+
             String uid = containerId + "_track" + (trackCount + 1);
             String httpPath = "http://" + mediaServer.getAddress() + "/" + uid;
             Res res = new Res(
@@ -1254,7 +1302,7 @@ public class EversoloLibraryService extends Service {
             ContentTree.addNode(track.getId(),
                     new ContentNode(track.getId(), track, filePath));
         }
-
+        namesMap.clear();
         // 更新容器的子项计数
         container.setChildCount(trackCount);
     }
@@ -1604,33 +1652,37 @@ public class EversoloLibraryService extends Service {
         int addedCount = 0;
         Map<String, String> namesMap = new HashMap<>();
         for (AudioInfo audioInfo : audioInfoList) {
-            boolean settingOpen = Settings.System.getInt(getApplicationContext().getContentResolver(), "cling_open_iso", 0) == 1;
-            if (settingOpen && "iso".equals(audioInfo.getExtension())) {
+            boolean settingOpen = Settings.System.getInt(getApplicationContext().getContentResolver(), settingName, 0) == 1;
+            if (!settingOpen) {
+                if (audioInfo.isDsf() || "dsf".equals(audioInfo.getExtension()) || "dff".equals(audioInfo.getExtension())) {
+                    continue;
+                }
+            }
+            if ("iso".equals(audioInfo.getExtension())) {
                 continue;
             }
-            if (audioInfo.isDsf() || "dsf".equals(audioInfo.getExtension()) || "dff".equals(audioInfo.getExtension())) {
-                continue;
-            }
+
             try {
                 String title = audioInfo.getTitle() != null ? audioInfo.getTitle().trim() : "未知标题";
                 // 检查是否为CUE文件
-                if (audioInfo.isCue()) {
-                    // 处理CUE文件
-                    String filePath = audioInfo.getPath() != null ? audioInfo.getPath() : "";
-                    if (!filePath.isEmpty() && namesMap.containsKey(filePath)) {
-                        continue;
-                    }
-                    title = audioInfo.getAlbum();
-                    namesMap.put(filePath, audioInfo.getAlbum());
+
+                // 处理CUE文件
+                String path = audioInfo.getPath() != null ? audioInfo.getPath() : "";
+                String filePath = !path.isEmpty() ? path : audioInfo.getUrl();
+                if (!filePath.isEmpty() && namesMap.containsKey(filePath)) {
+                    continue;
                 }
+                if (audioInfo.isCue()) {
+                    title = audioInfo.getAlbum();
+                }
+                namesMap.put(filePath, title);
+
                 // 非CUE文件，正常处理
 
                 // 创建MusicTrack对象
                 String trackId = "api_track_" + audioContainer.getId() + "_" + audioInfo.getId();
                 String artist = audioInfo.getArtist() != null ? audioInfo.getArtist() : "未知艺术家";
                 String album = audioInfo.getAlbum() != null ? audioInfo.getAlbum() : "未知专辑";
-                String path = audioInfo.getPath() != null ? audioInfo.getPath() : "";
-                String filePath = !path.isEmpty() ? path : audioInfo.getUrl();
                 String httpPath = "http://" + mediaServer.getAddress() + "/" + trackId;
 
                 // 创建资源对象
@@ -1685,7 +1737,7 @@ public class EversoloLibraryService extends Service {
                 Log.d(LOGTAG, "添加API音乐到容器失败: " + e.getMessage());
             }
         }
-
+        namesMap.clear();
         // 更新容器的子项计数
         audioContainer.setChildCount(audioContainer.getChildCount() + addedCount);
     }
@@ -1695,13 +1747,13 @@ public class EversoloLibraryService extends Service {
      */
     private void finishPreparation() {
         serverPrepared = true; // 设置准备完成标志，防止重复初始化
-        
+
         // 重新排序根节点中的容器，实现用户要求的顺序：单曲-艺术家-专辑艺术家-作曲家-专辑-流派
         sortRootContainers();
-        
+
         loadingComplete();
     }
-    
+
     /**
      * 重新排序根节点中的容器，实现指定的顺序：单曲-艺术家-专辑艺术家-作曲家-专辑-流派
      */
@@ -1710,12 +1762,12 @@ public class EversoloLibraryService extends Service {
         if (rootNode == null || rootNode.getContainer() == null) {
             return;
         }
-        
+
         List<Container> containers = rootNode.getContainer().getContainers();
         if (containers == null || containers.isEmpty()) {
             return;
         }
-        
+
         // 定义期望的容器顺序（按容器ID排序）
         final List<String> desiredOrder = Arrays.asList(
                 ContentTree.AUDIO_ID,      // 单曲
@@ -1725,26 +1777,26 @@ public class EversoloLibraryService extends Service {
                 ContentTree.ALBUM_ID,      // 专辑
                 ContentTree.GENRE_ID       // 流派
         );
-        
+
         // 创建一个新的排序后的容器列表
         List<Container> sortedContainers = new ArrayList<>();
         Map<String, Container> containerMap = new HashMap<>();
-        
+
         // 将所有容器放入Map中，便于按ID查找
         for (Container container : containers) {
             containerMap.put(container.getId(), container);
         }
-        
+
         // 按照期望的顺序添加容器
         for (String containerId : desiredOrder) {
             if (containerMap.containsKey(containerId)) {
                 sortedContainers.add(containerMap.remove(containerId));
             }
         }
-        
+
         // 添加剩余的容器（如果有）
         sortedContainers.addAll(containerMap.values());
-        
+
         // 替换根节点中的容器列表
         rootNode.getContainer().setContainers(sortedContainers);
     }

@@ -42,4 +42,14 @@
         <item name="android:textColorSecondary">@color/white</item> <!-- preference二级文本颜色 -->
     </style>
 
+    <!-- 透明主题，用于入口Activity -->
+    <style name="TransparentTheme" parent="android:Theme.Translucent.NoTitleBar">
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowContentOverlay">@null</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowIsFloating">false</item>
+        <item name="android:backgroundDimEnabled">false</item>
+    </style>
+
 </resources>

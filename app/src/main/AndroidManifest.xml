@@ -3,7 +3,7 @@
     package="com.zxt.dlna"
     android:versionCode="2"
     android:versionName="2.0">
-
+  
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE" />
@@ -14,6 +14,8 @@
         android:name="android.permission.MOUNT_UNMOUNT_FILESYSTEMS"
         tools:ignore="ProtectedPermissions"></uses-permission>
 
+    <!-- 开机自启动权限 -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <application
         android:name="com.zxt.dlna.application.BaseApplication"
@@ -21,21 +23,31 @@
         android:icon="@drawable/ic_launcher"
         android:label="@string/appName"
         android:theme="@style/Theme.Design">
-
+        <!--透明Activity作为应用入口点，解决Android Studio无法运行无界面应用的问题-->
         <activity
-            android:name="com.zxt.dlna.activity.OpenServerActivity"
+            android:name="com.zxt.dlna.activity.TransparentEntryActivity"
             android:exported="true"
-            android:hardwareAccelerated="false"
-            android:theme="@android:style/Theme.NoTitleBar">
+            android:theme="@style/TransparentTheme">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
 
         <service android:name="org.fourthline.cling.android.AndroidUpnpServiceImpl" />
         <service android:name="com.zxt.dlna.dms.EversoloLibraryService" />
+
+        <!-- 广播接收器，用于接收其他应用发送的广播来控制服务 -->
+        <receiver
+            android:name="com.zxt.dlna.dms.EversoloLibraryReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.zxt.dlna.ACTION_START_SERVER" />
+                <action android:name="com.zxt.dlna.ACTION_STOP_SERVER" />
+                <action android:name="com.zxt.dlna.ACTION_REFRESH_DATA" />
+                <action android:name="android.intent.action.BOOT_COMPLETED" /> <!-- 设备启动完成广播 -->
+            </intent-filter>
+        </receiver>
 
     </application>
 

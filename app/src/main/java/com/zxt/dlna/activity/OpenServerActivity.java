@@ -1,5 +1,7 @@
 package com.zxt.dlna.activity;
 
+import static com.zxt.dlna.dms.EversoloLibraryService.CLING_SETTING_NAME;
+
 import android.app.Activity;
 import android.content.ComponentName;
 import android.content.Intent;
@@ -9,6 +11,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
+import android.provider.Settings;
 import android.support.annotation.Nullable;
 import android.util.Log;
 import android.widget.Switch;
@@ -25,8 +28,9 @@ import com.zxt.dlna.dms.EversoloLibraryService;
 public class OpenServerActivity extends Activity {
 
     private static final String PREFS_NAME = "server_settings";
+
     private static final String KEY_SERVER_ENABLED = "server_enabled";
-    
+    private int status = 0;
     private EversoloLibraryService libraryService;
     private boolean isServiceBound = false;
     private Switch switchCompat;
@@ -43,7 +47,7 @@ public class OpenServerActivity extends Activity {
                 EversoloLibraryService.LocalBinder binder = (EversoloLibraryService.LocalBinder) service;
                 libraryService = binder.getService();
                 isServiceBound = true;
-                
+
                 // 检查是否需要自动启动服务
                 boolean isServerEnabled = sharedPreferences.getBoolean(KEY_SERVER_ENABLED, false);
                 if (isServerEnabled && BaseApplication.upnpService == null) {
@@ -77,20 +81,20 @@ public class OpenServerActivity extends Activity {
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_open_server);
-
+        status = Settings.System.getInt(getContentResolver(), CLING_SETTING_NAME,0);
+        if (status == 1) {
+            // 绑定服务
+            Intent intent = new Intent(this, EversoloLibraryService.class);
+            bindService(intent, serviceConnection, BIND_AUTO_CREATE);
+        }
         // 初始化SharedPreferences
         sharedPreferences = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
-        
         // 初始化UI组件
         switchCompat = (Switch) findViewById(R.id.switchBt);
         textView = (TextView) findViewById(R.id.text);
 
-        // 绑定服务
-        Intent intent = new Intent(this, EversoloLibraryService.class);
-        bindService(intent, serviceConnection, BIND_AUTO_CREATE);
-
         // 设置开关初始状态
-        boolean isServerEnabled = sharedPreferences.getBoolean(KEY_SERVER_ENABLED, false);
+        boolean isServerEnabled = status == 1;
         switchCompat.setChecked(isServerEnabled && BaseApplication.upnpService != null);
         updateSwitchState();
 
@@ -101,7 +105,7 @@ public class OpenServerActivity extends Activity {
                 switchCompat.setEnabled(false);
                 // 更新状态文本
                 textView.setText(b ? "正在启动服务..." : "正在停止服务...");
-            }catch (Exception e){
+            } catch (Exception e) {
                 e.printStackTrace();
                 Log.e(TAG, "updateSwitchState: " + e.getMessage());
             }
@@ -117,7 +121,8 @@ public class OpenServerActivity extends Activity {
                             // 检查Activity是否仍然活动
                             if (!isFinishing() && !isDestroyed()) {
                                 // 保存服务状态
-                                sharedPreferences.edit().putBoolean(KEY_SERVER_ENABLED, true).apply();
+//                                sharedPreferences.edit().putBoolean(KEY_SERVER_ENABLED, true).apply();
+                                Settings.System.putInt(getContentResolver(),CLING_SETTING_NAME,1);
                                 switchCompat.setEnabled(true);
                                 updateSwitchState();
                             }
@@ -137,7 +142,8 @@ public class OpenServerActivity extends Activity {
                         // 检查Activity是否仍然活动
                         if (!isFinishing() && !isDestroyed()) {
                             // 保存服务状态
-                            sharedPreferences.edit().putBoolean(KEY_SERVER_ENABLED, false).apply();
+//                            sharedPreferences.edit().putBoolean(KEY_SERVER_ENABLED, false).apply();
+                            Settings.System.putInt(getContentResolver(),CLING_SETTING_NAME,0);
                             switchCompat.setEnabled(true);
                             updateSwitchState();
                         }
@@ -154,7 +160,7 @@ public class OpenServerActivity extends Activity {
         boolean isServerRunning = BaseApplication.upnpService != null;
         textView.setText(switchCompat.isChecked() ? "服务已启动" : "服务已停止");
     }
-    
+
     @Override
     protected void onDestroy() {
         super.onDestroy();
@@ -162,13 +168,13 @@ public class OpenServerActivity extends Activity {
         if (handler != null) {
             handler.removeCallbacksAndMessages(null);
         }
-        
+
         // 解绑服务
         if (isServiceBound) {
             unbindService(serviceConnection);
             isServiceBound = false;
         }
-        
+
         // 释放引用
         libraryService = null;
         switchCompat = null;
