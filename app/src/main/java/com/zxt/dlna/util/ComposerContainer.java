@@ -7,6 +7,7 @@ import com.zxt.dlna.util.ApiClient.ApiCallback;
 import com.zxt.dlna.util.ApiClient.ComposerResponse;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -50,30 +51,65 @@ public class ComposerContainer {
         isLoading = true;
         errorMessage = null;
 
+        // 清空现有数据，准备重新加载
+        composerInfoList.clear();
+
         if (DEBUG_API) {
             Log.d(TAG, "loadComposerList - params: " + params);
         }
 
+        // 开始自动分页加载
+        loadComposerListWithPagination(params, callback);
+    }
+    
+    /**
+     * 带自动分页的作曲家列表加载
+     * @param params 请求参数
+     * @param callback 回调接口
+     */
+    private void loadComposerListWithPagination(final Map<String, String> params, final LoadCallback callback) {
         ApiClient apiClient = ApiClient.getInstance();
         apiClient.getComposerList(params, new ApiCallback<ComposerResponse>() {
             @Override
             public void onSuccess(ComposerResponse response) {
-                composerResponse = response;
-                composerInfoList = response != null ? response.getArray() : new ArrayList<ComposerInfo>();
-                isLoading = false;
-
-                if (DEBUG_API) {
-                    Log.d(TAG, "loadComposerList - success, composer count: " + (composerInfoList != null ? composerInfoList.size() : 0));
+                if (response != null && response.getArray() != null && !response.getArray().isEmpty()) {
+                    // 将当前页数据添加到列表中
+                    composerInfoList.addAll(response.getArray());
+                    composerResponse = response;
+                    
+                    if (DEBUG_API) {
+                        Log.d(TAG, "loadComposerListWithPagination - success, composer count: " + composerInfoList.size());
+                    }
+                    
+                    // 检查是否还有更多数据需要加载
+                    int currentStart = response.getStart();
+                    int currentCount = response.getCount();
+                    int totalCount = response.getTotal();
+                    
+                    if (currentStart + currentCount < totalCount) {
+                        // 还有更多数据，继续加载下一页
+                        Map<String, String> nextParams = new HashMap<>(params);
+                        nextParams.put("start", String.valueOf(currentStart + currentCount));
+                        nextParams.put("count", params.get("count")); // 保持相同的每页数量
+                        
+                        loadComposerListWithPagination(nextParams, callback);
+                        return;
+                    }
                 }
-
+                
+                isLoading = false;
+                
                 if (callback != null) {
+                    if (DEBUG_API) {
+                        Log.d(TAG, "loadComposerListWithPagination - all pages loaded, total composer count: " + composerInfoList.size());
+                    }
                     callback.onSuccess(composerInfoList);
                 }
             }
 
             @Override
             public void onFailure(String errorMsg) {
-                Log.e(TAG, "loadComposerList - failure: " + errorMsg);
+                Log.e(TAG, "loadComposerListWithPagination - failure: " + errorMsg);
                 errorMessage = errorMsg;
                 isLoading = false;
                 if (callback != null) {

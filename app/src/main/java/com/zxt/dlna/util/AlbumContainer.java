@@ -43,18 +43,51 @@ public class AlbumContainer {
         isLoading = true;
         errorMessage = null;
         
+        // 清空现有数据，准备重新加载
+        albumInfoList.clear();
+        
+        // 开始自动分页加载
+        loadAlbumListWithPagination(params, callback);
+    }
+    
+    /**
+     * 带自动分页的专辑列表加载
+     * @param params 请求参数
+     * @param callback 回调接口
+     */
+    private void loadAlbumListWithPagination(final Map<String, String> params, final LoadCallback callback) {
         ApiClient apiClient = ApiClient.getInstance();
         apiClient.getAlbums(params, new ApiClient.ApiCallback<ApiClient.AlbumResponse>() {
             @Override
             public void onSuccess(ApiClient.AlbumResponse response) {
-                albumResponse = response;
-                albumInfoList = response != null ? response.getArray() : new ArrayList<AlbumInfo>();
-                isLoading = false;
+                List<AlbumInfo> currentPageAlbums = response != null ? response.getArray() : new ArrayList<AlbumInfo>();
                 
-                // 为每个专辑获取歌曲列表
+                if (currentPageAlbums != null && !currentPageAlbums.isEmpty()) {
+                    // 将当前页数据添加到列表中
+                    albumInfoList.addAll(currentPageAlbums);
+                    albumResponse = response;
+                    
+                    // 检查是否还有更多数据需要加载
+                    int currentStart = response.getStart();
+                    int currentCount = response.getCount();
+                    int totalCount = response.getTotal();
+                    
+                    if (currentStart + currentCount < totalCount) {
+                        // 还有更多数据，继续加载下一页
+                        Map<String, String> nextParams = new HashMap<>(params);
+                        nextParams.put("start", String.valueOf(currentStart + currentCount));
+                        nextParams.put("count", params.get("count")); // 保持相同的每页数量
+                        
+                        loadAlbumListWithPagination(nextParams, callback);
+                        return;
+                    }
+                }
+                
+                // 所有专辑都已加载完成，现在为每个专辑获取歌曲列表
                 if (albumInfoList != null && !albumInfoList.isEmpty()) {
                     loadSongsForAlbums(albumInfoList, callback);
                 } else {
+                    isLoading = false;
                     if (callback != null) {
                         callback.onSuccess(albumInfoList);
                     }

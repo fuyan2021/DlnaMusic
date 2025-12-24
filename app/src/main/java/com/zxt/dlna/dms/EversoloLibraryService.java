@@ -56,6 +56,7 @@ public class EversoloLibraryService extends Service {
     private MediaServer mediaServer;
     private static boolean serverPrepared = false;
     private final static String LOGTAG = "EversoloLibraryService";
+    private final static String count = "100";
     private boolean isUpdating = false; // 防止并发更新
 
     private List<ArtistInfo> artistInfoList = new ArrayList<>();
@@ -116,6 +117,7 @@ public class EversoloLibraryService extends Service {
     /**
      * 更新媒体服务器数据
      * 重新请求接口更新所有节点数据
+     * 这个更新过程需要时间，数据量越大时间越长
      */
     public void updateMediaServer() {
         // 防止并发更新
@@ -431,6 +433,9 @@ public class EversoloLibraryService extends Service {
         initAlbumArtistContainer();
     }
 
+    /**
+     * 服务的启停需要一个缓冲时间，约1-2s，开关时最好loading
+     */
     public void startServer() {
         // 检查是否正在处理中或服务已绑定
         if (isProcessing || isServiceBound) {
@@ -809,7 +814,7 @@ public class EversoloLibraryService extends Service {
                 Map<String, String> params = new HashMap<>();
                 params.put("id", String.valueOf(albumArtistInfo.getId()));
                 params.put("start", "0");
-                params.put("count", "200");
+                params.put("count", count);
                 params.put("artistType", "1");
                 ApiClient.getInstance().getArtistAlbums(params, new ApiClient.ApiCallback<ApiClient.AlbumResponse>() {
                     @Override
@@ -863,7 +868,7 @@ public class EversoloLibraryService extends Service {
                 Map<String, String> musicParams = new HashMap<>();
                 musicParams.put("id", String.valueOf(albumArtistInfo.getId()));
                 musicParams.put("start", "0");
-                musicParams.put("count", "200");
+                musicParams.put("count", count);
                 params.put("artistType", "1");
                 params.put("needParse", String.valueOf(true));
                 ApiClient.getInstance().getArtistMusics(musicParams, new ApiClient.ApiCallback<ApiClient.MusicResponse>() {
@@ -1017,7 +1022,7 @@ public class EversoloLibraryService extends Service {
                 Map<String, String> params = new HashMap<>();
                 params.put("id", String.valueOf(artistInfo.getId()));
                 params.put("start", "0");
-                params.put("count", "200");
+                params.put("count", count);
 
                 ApiClient.getInstance().getArtistAlbums(params, new ApiClient.ApiCallback<ApiClient.AlbumResponse>() {
                     @Override
@@ -1071,7 +1076,7 @@ public class EversoloLibraryService extends Service {
                 Map<String, String> musicParams = new HashMap<>();
                 musicParams.put("id", String.valueOf(artistInfo.getId()));
                 musicParams.put("start", "0");
-                musicParams.put("count", "200");
+                musicParams.put("count", count);
                 params.put("needParse", String.valueOf(true));
                 ApiClient.getInstance().getArtistMusics(musicParams, new ApiClient.ApiCallback<ApiClient.MusicResponse>() {
                     @Override
@@ -1259,7 +1264,7 @@ public class EversoloLibraryService extends Service {
     private void loadApiMusicList(final Container audioContainer) {
         Map<String, String> params = new HashMap<>();
         params.put("start", "0");
-        params.put("count", "500");
+        params.put("count", count);
         params.put("needParse", String.valueOf(true));
         // 添加日志，显示MusicContainer使用的baseUrl
         ApiClient apiClient = ApiClient.getInstance();
@@ -1333,7 +1338,7 @@ public class EversoloLibraryService extends Service {
     private void loadApiArtistList(final ArtistListCallback callback) {
         Map<String, String> params = new HashMap<>();
         params.put("start", "0");
-        params.put("count", "200");
+        params.put("count", count);
         params.put("artistType", "0");
 
         // 添加API调试日志
@@ -1379,7 +1384,7 @@ public class EversoloLibraryService extends Service {
     private void loadApiAlbumArtistList(final AlbumArtistListCallback callback) {
         Map<String, String> params = new HashMap<>();
         params.put("start", "0");
-        params.put("count", "200");
+        params.put("count", count);
         params.put("artistType", "1"); // 1表示专辑艺术家
 
         // 添加API调试日志
@@ -1425,7 +1430,7 @@ public class EversoloLibraryService extends Service {
     private void loadApiComposerList(final ComposerListCallback callback) {
         Map<String, String> params = new HashMap<>();
         params.put("start", "0");
-        params.put("count", "200");
+        params.put("count", count);
 
         // 添加API调试日志
         ApiClient apiClient = ApiClient.getInstance();
@@ -1469,7 +1474,9 @@ public class EversoloLibraryService extends Service {
      */
     private void loadApiGenreList(final GenreListCallback callback) {
         Map<String, String> params = new HashMap<>();
-        // 流派接口可能不需要参数，根据实际情况调整
+        // 添加分页参数，支持自动分页加载
+        params.put("start", "0");
+        params.put("count", count);
 
         // 使用GenreContainer加载流派列表
         genreContainer.loadGenreList(params, new GenreContainer.LoadCallback() {
@@ -1504,9 +1511,30 @@ public class EversoloLibraryService extends Service {
      * @param albumType   专辑类型艺术家0,作曲家传1，流派传2
      */
     private void loadAlbumMusicsForArtist(Container container, String containerId, AlbumInfo albumInfo, String artistId, int albumType) {
+        // 初始化一个集合来存储所有歌曲
+        List<AudioInfo> allSongs = new ArrayList<>();
+        // 开始自动分页加载
+        loadAlbumMusicsWithPagination(container, containerId, albumInfo, artistId, albumType, 0, 200, allSongs);
+    }
+
+    /**
+     * 带自动分页的专辑音乐加载
+     *
+     * @param container   目标容器
+     * @param containerId 容器ID
+     * @param albumInfo   专辑信息
+     * @param artistId    艺术家ID
+     * @param albumType   专辑类型艺术家0,作曲家传1，流派传2
+     * @param start       起始位置
+     * @param count       每页数量
+     * @param allSongs    存储所有歌曲的列表
+     */
+    private void loadAlbumMusicsWithPagination(Container container, String containerId, AlbumInfo albumInfo,
+                                               String artistId, int albumType, int start, int count,
+                                               List<AudioInfo> allSongs) {
         ApiClient apiClient = ApiClient.getInstance();
         if (apiClient == null) {
-            Log.e(LOGTAG, "loadAlbumMusicsForArtist: apiClient为空，无法加载音乐");
+            Log.e(LOGTAG, "loadAlbumMusicsWithPagination: apiClient为空，无法加载音乐");
             return;
         }
 
@@ -1516,22 +1544,38 @@ public class EversoloLibraryService extends Service {
             params.put("albumTypeId", String.valueOf(artistId));
             params.put("albumType", String.valueOf(albumType));
             params.put("id", String.valueOf(albumInfo.getId()));
-            params.put("start", "0");
-            params.put("count", "200");
+            params.put("start", String.valueOf(start));
+            params.put("count", String.valueOf(count));
             params.put("needParse", String.valueOf(true));
+
             // 调用API获取专辑歌曲
             apiClient.getAlbumMusics(params, new ApiClient.ApiCallback<ApiClient.MusicResponse>() {
                 @Override
                 public void onSuccess(ApiClient.MusicResponse response) {
                     if (response != null && response.getArray() != null) {
                         List<AudioInfo> songList = response.getArray();
-                        Log.d(LOGTAG, "loadAlbumMusicsForArtist: 获取到歌曲数量: " + songList.size());
+                        Log.d(LOGTAG, "loadAlbumMusicsWithPagination: 获取到歌曲数量: " + songList.size() +
+                                ", start: " + start + ", count: " + count);
 
-                        // 直接将歌曲添加到专辑容器中
-                        addApiMusicToContainer(songList, container);
+                        // 将当前页歌曲添加到总列表
+                        allSongs.addAll(songList);
+
+                        // 检查是否还有更多数据
+                        if (response.getStart() + response.getCount() < response.getTotal()) {
+                            // 还有更多数据，继续加载下一页
+                            loadAlbumMusicsWithPagination(container, containerId, albumInfo, artistId, albumType,
+                                    start + count, count, allSongs);
+                            return;
+                        }
+
+                        // 所有数据加载完成
+                        Log.d(LOGTAG, "loadAlbumMusicsWithPagination: 所有歌曲加载完成，共 " + allSongs.size() + " 首");
+
+                        // 直接将所有歌曲添加到专辑容器中
+                        addApiMusicToContainer(allSongs, container);
 
                         // 更新专辑容器的子项计数
-                        container.setChildCount(songList.size());
+                        container.setChildCount(allSongs.size());
 
                         // 更新ContentTree中的容器信息
                         ContentTree.addNode(containerId, new ContentNode(containerId, container));
@@ -1540,11 +1584,11 @@ public class EversoloLibraryService extends Service {
 
                 @Override
                 public void onFailure(String errorMsg) {
-                    Log.e(LOGTAG, "loadAlbumMusicsForArtist: 获取专辑歌曲失败: " + errorMsg);
+                    Log.e(LOGTAG, "loadAlbumMusicsWithPagination: 获取专辑歌曲失败: " + errorMsg);
                 }
             });
         } catch (Exception e) {
-            Log.e(LOGTAG, "loadAlbumMusicsForArtist: 加载专辑歌曲时出错: " + e.getMessage(), e);
+            Log.e(LOGTAG, "loadAlbumMusicsWithPagination: 加载专辑歌曲时出错: " + e.getMessage(), e);
         }
     }
 
@@ -1742,7 +1786,7 @@ public class EversoloLibraryService extends Service {
                 Map<String, String> params = new HashMap<>();
                 params.put("id", String.valueOf(composerInfo.getId()));
                 params.put("start", "0");
-                params.put("count", "200");
+                params.put("count", count);
 
                 ApiClient.getInstance().getComposerAlbumList(params, new ApiClient.ApiCallback<ApiClient.AlbumResponse>() {
                     @Override
@@ -1821,7 +1865,7 @@ public class EversoloLibraryService extends Service {
                 Map<String, String> params = new HashMap<>();
                 params.put("id", String.valueOf(composerInfo.getId()));
                 params.put("start", "0");
-                params.put("count", "200");
+                params.put("count", count);
 
                 ApiClient.getInstance().getComposerAudioList(params, new ApiClient.ApiCallback<ApiClient.MusicResponse>() {
                     @Override
@@ -1963,7 +2007,7 @@ public class EversoloLibraryService extends Service {
                 params.put("genres", "[" + genreInfo.getGenreId() + "]");
                 params.put("needParse", String.valueOf(true));
                 params.put("start", "0");
-                params.put("count", "500");
+                params.put("count", count);
 
                 ApiClient.getInstance().getSingleMusics(params, new ApiClient.ApiCallback<ApiClient.MusicResponse>() {
                     @Override
@@ -1990,7 +2034,7 @@ public class EversoloLibraryService extends Service {
                 Map<String, String> params = new HashMap<>();
                 params.put("id", String.valueOf(genreInfo.getGenreId()));
                 params.put("start", "0");
-                params.put("count", "200");
+                params.put("count", count);
 
                 ApiClient.getInstance().getGenreAlbumList(params, new ApiClient.ApiCallback<ApiClient.AlbumResponse>() {
                     @Override
@@ -2063,7 +2107,7 @@ public class EversoloLibraryService extends Service {
     private void loadApiAlbumList(final AlbumListCallback callback) {
         Map<String, String> params = new HashMap<>();
         params.put("start", "0");
-        params.put("count", "200");
+        params.put("count", count);
 
         // 添加API调试日志
         ApiClient apiClient = ApiClient.getInstance();

@@ -3,6 +3,7 @@ package com.zxt.dlna.util;
 import com.zxt.dlna.dms.bean.AudioInfo;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -40,12 +41,44 @@ public class SingleMusicContainer {
         isLoading = true;
         errorMessage = null;
         
+        // 清空现有数据，准备重新加载
+        audioInfoList.clear();
+        
+        // 开始自动分页加载
+        loadMusicListWithPagination(params, callback);
+    }
+    
+    /**
+     * 带自动分页的音乐列表加载
+     * @param params 请求参数
+     * @param callback 回调接口
+     */
+    private void loadMusicListWithPagination(final Map<String, String> params, final LoadCallback callback) {
         ApiClient apiClient = ApiClient.getInstance();
         apiClient.getSingleMusics(params, new ApiClient.ApiCallback<ApiClient.MusicResponse>() {
             @Override
             public void onSuccess(ApiClient.MusicResponse response) {
-                musicResponse = response;
-                audioInfoList = response != null ? response.getArray() : new ArrayList<AudioInfo>();
+                if (response != null && response.getArray() != null && !response.getArray().isEmpty()) {
+                    // 将当前页数据添加到列表中
+                    audioInfoList.addAll(response.getArray());
+                    musicResponse = response;
+                    
+                    // 检查是否还有更多数据需要加载
+                    int currentStart = response.getStart();
+                    int currentCount = response.getCount();
+                    int totalCount = response.getTotal();
+                    
+                    if (currentStart + currentCount < totalCount) {
+                        // 还有更多数据，继续加载下一页
+                        Map<String, String> nextParams = new HashMap<>(params);
+                        nextParams.put("start", String.valueOf(currentStart + currentCount));
+                        nextParams.put("count", params.get("count")); // 保持相同的每页数量
+                        
+                        loadMusicListWithPagination(nextParams, callback);
+                        return;
+                    }
+                }
+                
                 isLoading = false;
                 
                 if (callback != null) {
