@@ -111,7 +111,7 @@ public class AlbumContainer {
             params.put("id", String.valueOf(albumInfo.getId()));
             params.put("needParse", String.valueOf(true));
             params.put("start", "0");
-            params.put("count", "100");
+            params.put("count", "200");
             
             apiClient.getAlbumMusics(params, new ApiClient.ApiCallback<ApiClient.MusicResponse>() {
                 @Override

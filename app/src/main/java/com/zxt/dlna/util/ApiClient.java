@@ -1,19 +1,27 @@
 package com.zxt.dlna.util;
 
-import okhttp3.*;
+import android.util.Log;
+
 import com.google.gson.Gson;
-import com.google.gson.annotations.SerializedName;
 import com.zxt.dlna.dms.bean.AlbumInfo;
-import com.zxt.dlna.dms.bean.AudioInfo;
 import com.zxt.dlna.dms.bean.ArtistInfo;
+import com.zxt.dlna.dms.bean.AudioInfo;
 import com.zxt.dlna.dms.bean.ComposerInfo;
 
-import android.util.Log;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+
+import okhttp3.Call;
+import okhttp3.Callback;
+import okhttp3.FormBody;
+import okhttp3.MediaType;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
 
 /**
  * OkHttp接口请求工具类
@@ -46,11 +54,12 @@ public class ApiClient {
 
     /**
      * 构造函数，可自定义基础URL
+     *
      * @param baseUrl 基础URL
      */
     public ApiClient(String baseUrl) {
         this.baseUrl = baseUrl;
-        
+
         // 初始化OkHttpClient
         okHttpClient = new OkHttpClient.Builder()
                 .connectTimeout(10, TimeUnit.SECONDS)
@@ -61,6 +70,7 @@ public class ApiClient {
 
     /**
      * 设置基础URL
+     *
      * @param baseUrl 基础URL
      */
     public void setBaseUrl(String baseUrl) {
@@ -74,6 +84,7 @@ public class ApiClient {
 
     /**
      * 获取基础URL
+     *
      * @return 基础URL
      */
     public String getBaseUrl() {
@@ -82,67 +93,72 @@ public class ApiClient {
 
     /**
      * GET请求（字符串响应）
-     * @param url 接口地址（相对于baseUrl）
-     * @param params 请求参数
+     *
+     * @param url      接口地址（相对于baseUrl）
+     * @param params   请求参数
      * @param callback 回调接口
      */
     public void get(String url, Map<String, String> params, final StringCallback callback) {
         // 构建完整URL
         String fullUrl = buildUrl(url, params);
-        
+
         Request request = new Request.Builder()
                 .url(fullUrl)
                 .get()
                 .build();
-        
+
         executeRequest(request, callback);
     }
-    
+
     /**
      * GET请求（泛型响应）
-     * @param url 接口地址（相对于baseUrl）
-     * @param params 请求参数
-     * @param clazz 响应类型
+     *
+     * @param url      接口地址（相对于baseUrl）
+     * @param params   请求参数
+     * @param clazz    响应类型
      * @param callback 回调接口
      */
     public <T> void get(String url, Map<String, String> params, Class<T> clazz, final ApiCallback<T> callback) {
         // 构建完整URL
         String fullUrl = buildUrl(url, params);
-        
+
         Request request = new Request.Builder()
                 .url(fullUrl)
                 .get()
                 .build();
-        
+
         executeRequest(request, clazz, callback);
     }
 
     /**
      * 获取单曲列表
      * 接口地址：/getSingleMusics
-     * @param params 请求参数
+     *
+     * @param params   请求参数
      * @param callback 回调接口
      */
     public void getSingleMusics(Map<String, String> params, final ApiCallback<MusicResponse> callback) {
         String url = "/getSingleMusics";
         get(url, params, MusicResponse.class, callback);
     }
-    
+
     /**
      * 获取艺术家列表接口（直接返回ArtistResponse对象）
      * 接口地址：/getArtists
-     * @param params 请求参数
+     *
+     * @param params   请求参数
      * @param callback 回调接口
      */
     public void getArtists(Map<String, String> params, final ApiCallback<ArtistResponse> callback) {
         String url = "/getArtists";
         get(url, params, ArtistResponse.class, callback);
     }
-    
+
     /**
      * 获取专辑列表接口（直接返回AlbumResponse对象）
      * 接口地址：/getAlbums
-     * @param params 请求参数
+     *
+     * @param params   请求参数
      * @param callback 回调接口
      */
     public void getAlbums(Map<String, String> params, final ApiCallback<AlbumResponse> callback) {
@@ -153,7 +169,8 @@ public class ApiClient {
     /**
      * 获取专辑下的歌曲列表
      * 接口地址：/getAlbumMusics
-     * @param params 请求参数
+     *
+     * @param params   请求参数
      * @param callback 回调接口
      */
     public void getAlbumMusics(Map<String, String> params, final ApiCallback<MusicResponse> callback) {
@@ -165,7 +182,8 @@ public class ApiClient {
     /**
      * 获取作曲家列表接口（直接返回ComposerResponse对象）
      * 接口地址：/getComposerList
-     * @param params 请求参数
+     *
+     * @param params   请求参数
      * @param callback 回调接口
      */
     public void getComposerList(Map<String, String> params, final ApiCallback<ComposerResponse> callback) {
@@ -176,29 +194,32 @@ public class ApiClient {
     /**
      * 获取艺术家的专辑列表接口（直接返回AlbumResponse对象）
      * 接口地址：/getArtistAlbums
-     * @param params 请求参数
+     *
+     * @param params   请求参数
      * @param callback 回调接口
      */
     public void getArtistAlbums(Map<String, String> params, final ApiCallback<AlbumResponse> callback) {
         String url = "/getArtistAlbums";
         get(url, params, AlbumResponse.class, callback);
     }
-    
+
     /**
      * 获取艺术家的歌曲列表接口（直接返回MusicResponse对象）
      * 接口地址：/getArtistMusics
-     * @param params 请求参数
+     *
+     * @param params   请求参数
      * @param callback 回调接口
      */
     public void getArtistMusics(Map<String, String> params, final ApiCallback<MusicResponse> callback) {
         String url = "/getArtistMusics";
         get(url, params, MusicResponse.class, callback);
     }
-    
+
     /**
      * 获取作曲家的专辑列表接口（直接返回AlbumResponse对象）
      * 接口地址：/getComposerAlbumList
-     * @param params 请求参数
+     *
+     * @param params   请求参数
      * @param callback 回调接口
      */
     public void getComposerAlbumList(Map<String, String> params, final ApiCallback<AlbumResponse> callback) {
@@ -209,18 +230,20 @@ public class ApiClient {
     /**
      * 获取作曲家的单曲列表接口（直接返回MusicResponse对象）
      * 接口地址：/getComposerAudioList
-     * @param params 请求参数
+     *
+     * @param params   请求参数
      * @param callback 回调接口
      */
     public void getComposerAudioList(Map<String, String> params, final ApiCallback<MusicResponse> callback) {
         String url = "/getComposerAudioList";
         get(url, params, MusicResponse.class, callback);
     }
-    
+
     /**
      * 获取流派的专辑列表接口（直接返回AlbumResponse对象）
      * 接口地址：/getGenreAlbumList
-     * @param params 请求参数
+     *
+     * @param params   请求参数
      * @param callback 回调接口
      */
     public void getGenreAlbumList(Map<String, String> params, final ApiCallback<AlbumResponse> callback) {
@@ -231,7 +254,8 @@ public class ApiClient {
     /**
      * 获取过滤列表（包含流派等信息）
      * 接口地址：/getSingleFilterList
-     * @param params 请求参数
+     *
+     * @param params   请求参数
      * @param callback 回调接口
      */
     public void getSingleFilterList(Map<String, String> params, final ApiCallback<List<GenreResponse.FilterItem>> callback) {
@@ -248,7 +272,7 @@ public class ApiClient {
                             // 手动解析Map为FilterItem
                             GenreResponse.FilterItem filterItem = new GenreResponse.FilterItem();
                             Map<?, ?> itemMap = (Map<?, ?>) item;
-                            
+
                             // 解析key和name
                             if (itemMap.containsKey("key")) {
                                 filterItem.setKey(String.valueOf(itemMap.get("key")));
@@ -256,7 +280,7 @@ public class ApiClient {
                             if (itemMap.containsKey("name")) {
                                 filterItem.setName(String.valueOf(itemMap.get("name")));
                             }
-                            
+
                             // 解析data字段
                             if (itemMap.containsKey("data")) {
                                 Object dataObj = itemMap.get("data");
@@ -266,7 +290,7 @@ public class ApiClient {
                                         if (dataItem instanceof Map) {
                                             GenreResponse.GenreData genreData = new GenreResponse.GenreData();
                                             Map<?, ?> dataMap = (Map<?, ?>) dataItem;
-                                            
+
                                             // 解析genre data字段
                                             if (dataMap.containsKey("typeID")) {
                                                 Object typeIdObj = dataMap.get("typeID");
@@ -307,22 +331,22 @@ public class ApiClient {
                                                     }
                                                 }
                                             }
-                                            
+
                                             genreDataList.add(genreData);
                                         }
                                     }
                                     filterItem.setData(genreDataList);
                                 }
                             }
-                            
+
                             filterItems.add(filterItem);
                         }
                     }
                 }
-                
+
                 callback.onSuccess(filterItems);
             }
-            
+
             @Override
             public void onFailure(String errorMsg) {
                 callback.onFailure(errorMsg);
@@ -332,8 +356,9 @@ public class ApiClient {
 
     /**
      * POST请求（表单形式，字符串响应）
-     * @param url 接口地址（相对于baseUrl）
-     * @param params 请求参数
+     *
+     * @param url      接口地址（相对于baseUrl）
+     * @param params   请求参数
      * @param callback 回调接口
      */
     public void post(String url, Map<String, String> params, final StringCallback callback) {
@@ -345,20 +370,21 @@ public class ApiClient {
             }
         }
         RequestBody requestBody = formBodyBuilder.build();
-        
+
         Request request = new Request.Builder()
                 .url(baseUrl + url)
                 .post(requestBody)
                 .build();
-        
+
         executeRequest(request, callback);
     }
-    
+
     /**
      * POST请求（表单形式，泛型响应）
-     * @param url 接口地址（相对于baseUrl）
-     * @param params 请求参数
-     * @param clazz 响应类型
+     *
+     * @param url      接口地址（相对于baseUrl）
+     * @param params   请求参数
+     * @param clazz    响应类型
      * @param callback 回调接口
      */
     public <T> void post(String url, Map<String, String> params, Class<T> clazz, final ApiCallback<T> callback) {
@@ -370,63 +396,66 @@ public class ApiClient {
             }
         }
         RequestBody requestBody = formBodyBuilder.build();
-        
+
         Request request = new Request.Builder()
                 .url(baseUrl + url)
                 .post(requestBody)
                 .build();
-        
+
         executeRequest(request, clazz, callback);
     }
 
     /**
      * POST请求（JSON形式，字符串响应）
-     * @param url 接口地址（相对于baseUrl）
-     * @param json 请求JSON字符串
+     *
+     * @param url      接口地址（相对于baseUrl）
+     * @param json     请求JSON字符串
      * @param callback 回调接口
      */
     public void postJson(String url, String json, final StringCallback callback) {
         // 构建JSON请求体
         MediaType mediaType = MediaType.parse("application/json; charset=utf-8");
         RequestBody requestBody = RequestBody.create(mediaType, json);
-        
+
         Request request = new Request.Builder()
                 .url(baseUrl + url)
                 .post(requestBody)
                 .build();
-        
+
         executeRequest(request, callback);
     }
-    
+
     /**
      * POST请求（JSON形式，泛型响应）
-     * @param url 接口地址（相对于baseUrl）
-     * @param json 请求JSON字符串
-     * @param clazz 响应类型
+     *
+     * @param url      接口地址（相对于baseUrl）
+     * @param json     请求JSON字符串
+     * @param clazz    响应类型
      * @param callback 回调接口
      */
     public <T> void postJson(String url, String json, Class<T> clazz, final ApiCallback<T> callback) {
         // 构建JSON请求体
         MediaType mediaType = MediaType.parse("application/json; charset=utf-8");
         RequestBody requestBody = RequestBody.create(mediaType, json);
-        
+
         Request request = new Request.Builder()
                 .url(baseUrl + url)
                 .post(requestBody)
                 .build();
-        
+
         executeRequest(request, clazz, callback);
     }
 
     /**
      * 构建完整URL（包含参数）
-     * @param url 接口地址
+     *
+     * @param url    接口地址
      * @param params 请求参数
      * @return 完整URL
      */
     private String buildUrl(String url, Map<String, String> params) {
         StringBuilder fullUrl = new StringBuilder(baseUrl + url);
-        
+
         if (params != null && !params.isEmpty()) {
             fullUrl.append("?");
             for (Map.Entry<String, String> entry : params.entrySet()) {
@@ -438,16 +467,17 @@ public class ApiClient {
             // 移除最后一个&符号
             fullUrl.deleteCharAt(fullUrl.length() - 1);
         }
-        
+
         return fullUrl.toString();
     }
 
     // Gson实例
     private Gson gson = new Gson();
-    
+
     /**
      * 执行请求（字符串响应）
-     * @param request 请求对象
+     *
+     * @param request  请求对象
      * @param callback 回调接口
      */
     private void executeRequest(Request request, final StringCallback callback) {
@@ -474,11 +504,12 @@ public class ApiClient {
             }
         });
     }
-    
+
     /**
      * 执行请求（泛型响应）
-     * @param request 请求对象
-     * @param clazz 响应类型
+     *
+     * @param request  请求对象
+     * @param clazz    响应类型
      * @param callback 回调接口
      */
     private <T> void executeRequest(Request request, final Class<T> clazz, final ApiCallback<T> callback) {
@@ -522,48 +553,48 @@ public class ApiClient {
         private int count;
         private int total;
         private List<AudioInfo> array = new ArrayList<>();
-        
+
         public int getId() {
             return id;
         }
-        
+
         public void setId(int id) {
             this.id = id;
         }
-        
+
         public int getStart() {
             return start;
         }
-        
+
         public void setStart(int start) {
             this.start = start;
         }
-        
+
         public int getCount() {
             return count;
         }
-        
+
         public void setCount(int count) {
             this.count = count;
         }
-        
+
         public int getTotal() {
             return total;
         }
-        
+
         public void setTotal(int total) {
             this.total = total;
         }
-        
+
         public List<AudioInfo> getArray() {
             return array;
         }
-        
+
         public void setArray(List<AudioInfo> array) {
             this.array = array != null ? array : new ArrayList<>();
         }
     }
-    
+
     /**
      * 艺术家响应模型
      */
@@ -573,48 +604,48 @@ public class ApiClient {
         private int count;
         private int total;
         private List<ArtistInfo> array = new ArrayList<>();
-        
+
         public int getId() {
             return id;
         }
-        
+
         public void setId(int id) {
             this.id = id;
         }
-        
+
         public int getStart() {
             return start;
         }
-        
+
         public void setStart(int start) {
             this.start = start;
         }
-        
+
         public int getCount() {
             return count;
         }
-        
+
         public void setCount(int count) {
             this.count = count;
         }
-        
+
         public int getTotal() {
             return total;
         }
-        
+
         public void setTotal(int total) {
             this.total = total;
         }
-        
+
         public List<ArtistInfo> getArray() {
             return array;
         }
-        
+
         public void setArray(List<ArtistInfo> array) {
             this.array = array != null ? array : new ArrayList<>();
         }
     }
-    
+
     /**
      * 专辑响应模型
      */
@@ -624,48 +655,48 @@ public class ApiClient {
         private int count;
         private int total;
         private List<AlbumInfo> array = new ArrayList<>();
-        
+
         public int getId() {
             return id;
         }
-        
+
         public void setId(int id) {
             this.id = id;
         }
-        
+
         public int getStart() {
             return start;
         }
-        
+
         public void setStart(int start) {
             this.start = start;
         }
-        
+
         public int getCount() {
             return count;
         }
-        
+
         public void setCount(int count) {
             this.count = count;
         }
-        
+
         public int getTotal() {
             return total;
         }
-        
+
         public void setTotal(int total) {
             this.total = total;
         }
-        
+
         public List<AlbumInfo> getArray() {
             return array;
         }
-        
+
         public void setArray(List<AlbumInfo> array) {
             this.array = array != null ? array : new ArrayList<>();
         }
     }
-    
+
     /**
      * 作曲家响应模型
      */
@@ -675,48 +706,48 @@ public class ApiClient {
         private int count;
         private int total;
         private List<ComposerInfo> array = new ArrayList<>();
-        
+
         public int getId() {
             return id;
         }
-        
+
         public void setId(int id) {
             this.id = id;
         }
-        
+
         public int getStart() {
             return start;
         }
-        
+
         public void setStart(int start) {
             this.start = start;
         }
-        
+
         public int getCount() {
             return count;
         }
-        
+
         public void setCount(int count) {
             this.count = count;
         }
-        
+
         public int getTotal() {
             return total;
         }
-        
+
         public void setTotal(int total) {
             this.total = total;
         }
-        
+
         public List<ComposerInfo> getArray() {
             return array;
         }
-        
+
         public void setArray(List<ComposerInfo> array) {
             this.array = array != null ? array : new ArrayList<>();
         }
     }
-    
+
     /**
      * 流派响应类，用于解析/ZidooMusicControl/v2/getSingleFilterList接口返回的流派数据
      */
@@ -823,17 +854,19 @@ public class ApiClient {
     public interface ApiCallback<T> {
         /**
          * 请求成功
+         *
          * @param response 响应数据
          */
         void onSuccess(T response);
-        
+
         /**
          * 请求失败
+         *
          * @param errorMsg 错误信息
          */
         void onFailure(String errorMsg);
     }
-    
+
     /**
      * 字符串响应回调（兼容旧版）
      */

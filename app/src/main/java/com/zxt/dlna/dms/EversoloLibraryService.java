@@ -9,6 +9,7 @@ import android.os.Binder;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
+import android.provider.Settings;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -752,7 +753,7 @@ public class EversoloLibraryService extends Service {
                 Map<String, String> params = new HashMap<>();
                 params.put("id", String.valueOf(artistInfo.getId()));
                 params.put("start", "0");
-                params.put("count", "100");
+                params.put("count", "200");
 
                 ApiClient.getInstance().getArtistAlbums(params, new ApiClient.ApiCallback<ApiClient.AlbumResponse>() {
                     @Override
@@ -806,7 +807,7 @@ public class EversoloLibraryService extends Service {
                 Map<String, String> musicParams = new HashMap<>();
                 musicParams.put("id", String.valueOf(artistInfo.getId()));
                 musicParams.put("start", "0");
-                musicParams.put("count", "100");
+                musicParams.put("count", "200");
                 params.put("needParse", String.valueOf(true));
                 ApiClient.getInstance().getArtistMusics(musicParams, new ApiClient.ApiCallback<ApiClient.MusicResponse>() {
                     @Override
@@ -927,13 +928,17 @@ public class EversoloLibraryService extends Service {
         Map<String, String> namesMap = new HashMap<>();
         int trackCount = 0;
         for (AudioInfo song : songs) {
+            boolean settingOpen = Settings.System.getInt(getApplicationContext().getContentResolver(), "cling_open_iso", 0) == 1;
+            if (settingOpen && "iso".equals(song.getExtension())) {
+                continue;
+            }
+            if (song.isDsf() || "dsf".equals(song.getExtension())) {
+                continue;
+            }
             // 创建资源对象
             long fileSize = 0;
             // 创建音乐曲目项
             String title = song.getTitle() != null ? song.getTitle() : "未知标题";
-            if (song.isDsf() || "dsf".equals(song.getExtension()) || "sacd".equals(song.getExtension()) || "dsd".equals(song.getExtension()) || "iso".equals(song.getExtension())) {
-                continue;
-            }
             // 检查是否为CUE文件
             if (song.isCue()) {
                 // 处理CUE文件
@@ -958,7 +963,9 @@ public class EversoloLibraryService extends Service {
                     fileSize, // 使用真实的文件大小
                     httpPath // 使用真实的歌曲URI
             );
-
+            if (song.getExtension() != null) {
+                title += ("." + song.getExtension());
+            }
             MusicTrack track = new MusicTrack(
                     uid,       // 唯一的项目ID
                     containerId,                    // 父容器ID
@@ -988,7 +995,7 @@ public class EversoloLibraryService extends Service {
     private void loadApiMusicList(final Container audioContainer) {
         Map<String, String> params = new HashMap<>();
         params.put("start", "0");
-        params.put("count", "100");
+        params.put("count", "500");
         params.put("needParse", String.valueOf(true));
         // 添加日志，显示MusicContainer使用的baseUrl
         ApiClient apiClient = ApiClient.getInstance();
@@ -1053,7 +1060,7 @@ public class EversoloLibraryService extends Service {
     private void loadApiArtistList(final ArtistListCallback callback) {
         Map<String, String> params = new HashMap<>();
         params.put("start", "0");
-        params.put("count", "100");
+        params.put("count", "200");
         params.put("artistType", "0");
 
         // 添加API调试日志
@@ -1099,7 +1106,7 @@ public class EversoloLibraryService extends Service {
     private void loadApiComposerList(final ComposerListCallback callback) {
         Map<String, String> params = new HashMap<>();
         params.put("start", "0");
-        params.put("count", "100");
+        params.put("count", "200");
 
         // 添加API调试日志
         ApiClient apiClient = ApiClient.getInstance();
@@ -1144,11 +1151,6 @@ public class EversoloLibraryService extends Service {
     private void loadApiGenreList(final GenreListCallback callback) {
         Map<String, String> params = new HashMap<>();
         // 流派接口可能不需要参数，根据实际情况调整
-
-        // 添加API调试日志
-        ApiClient apiClient = ApiClient.getInstance();
-        Log.d(LOGTAG, "当前ApiClient baseUrl: " + apiClient.getBaseUrl());
-        Log.d(LOGTAG, "加载流派列表请求参数: " + params.toString());
 
         // 使用GenreContainer加载流派列表
         genreContainer.loadGenreList(params, new GenreContainer.LoadCallback() {
@@ -1196,7 +1198,7 @@ public class EversoloLibraryService extends Service {
             params.put("albumType", String.valueOf(albumType));
             params.put("id", String.valueOf(albumInfo.getId()));
             params.put("start", "0");
-            params.put("count", "100");
+            params.put("count", "200");
             params.put("needParse", String.valueOf(true));
             // 调用API获取专辑歌曲
             apiClient.getAlbumMusics(params, new ApiClient.ApiCallback<ApiClient.MusicResponse>() {
@@ -1238,7 +1240,11 @@ public class EversoloLibraryService extends Service {
         int addedCount = 0;
         Map<String, String> namesMap = new HashMap<>();
         for (AudioInfo audioInfo : audioInfoList) {
-            if (audioInfo.isDsf() || "dsf".equals(audioInfo.getExtension()) || "sacd".equals(audioInfo.getExtension()) || "dsd".equals(audioInfo.getExtension()) || "iso".equals(audioInfo.getExtension())) {
+            boolean settingOpen = Settings.System.getInt(getApplicationContext().getContentResolver(), "cling_open_iso", 0) == 1;
+            if (settingOpen && "iso".equals(audioInfo.getExtension())) {
+                continue;
+            }
+            if (audioInfo.isDsf() || "dsf".equals(audioInfo.getExtension())) {
                 continue;
             }
             try {
@@ -1275,7 +1281,9 @@ public class EversoloLibraryService extends Service {
                         fileSize, // 使用真实的文件大小
                         httpPath // 使用真实的歌曲URI
                 );
-
+                if (audioInfo.getExtension() != null) {
+                    title += ("." + audioInfo.getExtension());
+                }
                 // 创建音乐曲目项
                 MusicTrack musicTrack = new MusicTrack(
                         trackId,                      // 唯一的项目ID
@@ -1415,7 +1423,7 @@ public class EversoloLibraryService extends Service {
                 Map<String, String> params = new HashMap<>();
                 params.put("id", String.valueOf(composerInfo.getId()));
                 params.put("start", "0");
-                params.put("count", "100");
+                params.put("count", "200");
 
                 ApiClient.getInstance().getComposerAlbumList(params, new ApiClient.ApiCallback<ApiClient.AlbumResponse>() {
                     @Override
@@ -1494,7 +1502,7 @@ public class EversoloLibraryService extends Service {
                 Map<String, String> params = new HashMap<>();
                 params.put("id", String.valueOf(composerInfo.getId()));
                 params.put("start", "0");
-                params.put("count", "100");
+                params.put("count", "200");
 
                 ApiClient.getInstance().getComposerAudioList(params, new ApiClient.ApiCallback<ApiClient.MusicResponse>() {
                     @Override
@@ -1636,7 +1644,7 @@ public class EversoloLibraryService extends Service {
                 params.put("genres", "[" + genreInfo.getGenreId() + "]");
                 params.put("needParse", String.valueOf(true));
                 params.put("start", "0");
-                params.put("count", "100");
+                params.put("count", "500");
 
                 ApiClient.getInstance().getSingleMusics(params, new ApiClient.ApiCallback<ApiClient.MusicResponse>() {
                     @Override
@@ -1663,7 +1671,7 @@ public class EversoloLibraryService extends Service {
                 Map<String, String> params = new HashMap<>();
                 params.put("id", String.valueOf(genreInfo.getGenreId()));
                 params.put("start", "0");
-                params.put("count", "100");
+                params.put("count", "200");
 
                 ApiClient.getInstance().getGenreAlbumList(params, new ApiClient.ApiCallback<ApiClient.AlbumResponse>() {
                     @Override
@@ -1736,7 +1744,7 @@ public class EversoloLibraryService extends Service {
     private void loadApiAlbumList(final AlbumListCallback callback) {
         Map<String, String> params = new HashMap<>();
         params.put("start", "0");
-        params.put("count", "100");
+        params.put("count", "200");
 
         // 添加API调试日志
         ApiClient apiClient = ApiClient.getInstance();
