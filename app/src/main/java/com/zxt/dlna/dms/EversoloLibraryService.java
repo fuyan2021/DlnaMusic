@@ -42,6 +42,7 @@ import org.seamless.util.MimeType;
 
 import java.net.SocketException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -1474,7 +1475,7 @@ public class EversoloLibraryService extends Service {
      */
     private void loadApiGenreList(final GenreListCallback callback) {
         Map<String, String> params = new HashMap<>();
-        // 添加分页参数，支持自动分页加载
+        // 设置请求参数（流派接口不支持分页，仅使用基础参数）
         params.put("start", "0");
         params.put("count", count);
 
@@ -1694,7 +1695,58 @@ public class EversoloLibraryService extends Service {
      */
     private void finishPreparation() {
         serverPrepared = true; // 设置准备完成标志，防止重复初始化
+        
+        // 重新排序根节点中的容器，实现用户要求的顺序：单曲-艺术家-专辑艺术家-作曲家-专辑-流派
+        sortRootContainers();
+        
         loadingComplete();
+    }
+    
+    /**
+     * 重新排序根节点中的容器，实现指定的顺序：单曲-艺术家-专辑艺术家-作曲家-专辑-流派
+     */
+    private void sortRootContainers() {
+        ContentNode rootNode = ContentTree.getRootNode();
+        if (rootNode == null || rootNode.getContainer() == null) {
+            return;
+        }
+        
+        List<Container> containers = rootNode.getContainer().getContainers();
+        if (containers == null || containers.isEmpty()) {
+            return;
+        }
+        
+        // 定义期望的容器顺序（按容器ID排序）
+        final List<String> desiredOrder = Arrays.asList(
+                ContentTree.AUDIO_ID,      // 单曲
+                ContentTree.ARTIST_ID,     // 艺术家
+                ContentTree.ALBUM_ARTIST_ID, // 专辑艺术家
+                ContentTree.COMPOSER_ID,   // 作曲家
+                ContentTree.ALBUM_ID,      // 专辑
+                ContentTree.GENRE_ID       // 流派
+        );
+        
+        // 创建一个新的排序后的容器列表
+        List<Container> sortedContainers = new ArrayList<>();
+        Map<String, Container> containerMap = new HashMap<>();
+        
+        // 将所有容器放入Map中，便于按ID查找
+        for (Container container : containers) {
+            containerMap.put(container.getId(), container);
+        }
+        
+        // 按照期望的顺序添加容器
+        for (String containerId : desiredOrder) {
+            if (containerMap.containsKey(containerId)) {
+                sortedContainers.add(containerMap.remove(containerId));
+            }
+        }
+        
+        // 添加剩余的容器（如果有）
+        sortedContainers.addAll(containerMap.values());
+        
+        // 替换根节点中的容器列表
+        rootNode.getContainer().setContainers(sortedContainers);
     }
 
     /**

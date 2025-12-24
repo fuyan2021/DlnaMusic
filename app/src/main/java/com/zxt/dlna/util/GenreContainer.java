@@ -112,6 +112,10 @@ public class GenreContainer {
     public void setGenreInfoList(List<GenreInfo> genreInfoList) {
         this.genreInfoList = genreInfoList;
     }
+    
+    public boolean isLoading() {
+        return isLoading;
+    }
 
     /**
      * 加载回调接口
