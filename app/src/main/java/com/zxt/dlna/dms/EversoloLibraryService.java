@@ -1,9 +1,11 @@
 package com.zxt.dlna.dms;
 
 import android.app.Service;
+import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.net.ConnectivityManager;
 import android.net.Network;
@@ -356,6 +358,44 @@ public class EversoloLibraryService extends Service {
         }
     }
 
+    // 内部广播接收器，替代原来的外部EversoloLibraryReceiver
+    private BroadcastReceiver libraryReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (intent == null) {
+                return;
+            }
+            String action = intent.getAction();
+            Log.d(LOGTAG, "Received broadcast in service: " + action);
+            
+            switch (action) {
+                case "com.zxt.dlna.dms.START_SERVER":
+                    // 收到启动服务器广播，调用startServer方法
+                    startServer();
+                    Log.d(LOGTAG, "Server start requested via broadcast");
+                    break;
+                
+                case "com.zxt.dlna.dms.STOP_SERVER":
+                    // 收到停止服务器广播，调用stopServer方法
+                    stopServer();
+                    Log.d(LOGTAG, "Server stop requested via broadcast");
+                    break;
+                
+                case "com.zxt.dlna.dms.REFRESH_DATA":
+                    // 收到刷新数据广播，调用updateMediaServer方法
+                    updateMediaServer();
+                    Log.d(LOGTAG, "Data refresh requested via broadcast");
+                    break;
+                
+                case Intent.ACTION_BOOT_COMPLETED:
+                    // 设备启动完成，自动启动服务并启动服务器
+                    startServer();
+                    Log.d(LOGTAG, "Auto-start server on boot completed");
+                    break;
+            }
+        }
+    };
+
     private ServiceConnection serviceConnection = new ServiceConnection() {
 
         public void onServiceConnected(ComponentName className, IBinder service) {
@@ -413,6 +453,15 @@ public class EversoloLibraryService extends Service {
     public void onCreate() {
         super.onCreate();
         init();
+        
+        // 动态注册广播接收器
+        IntentFilter filter = new IntentFilter();
+        filter.addAction("com.zxt.dlna.dms.START_SERVER");
+        filter.addAction("com.zxt.dlna.dms.STOP_SERVER");
+        filter.addAction("com.zxt.dlna.dms.REFRESH_DATA");
+        filter.addAction(Intent.ACTION_BOOT_COMPLETED);
+        registerReceiver(libraryReceiver, filter);
+        Log.d(LOGTAG, "Broadcast receiver registered");
     }
 
     @Override
@@ -444,6 +493,15 @@ public class EversoloLibraryService extends Service {
     public void onDestroy() {
         super.onDestroy();
         Log.d(LOGTAG, "onDestroy: stopServer");
+        
+        // 注销广播接收器
+        try {
+            unregisterReceiver(libraryReceiver);
+            Log.d(LOGTAG, "Broadcast receiver unregistered");
+        } catch (Exception e) {
+            Log.w(LOGTAG, "Error unregistering broadcast receiver", e);
+        }
+        
         // 停止服务器并清理资源
         stopServer();
     }
@@ -464,12 +522,10 @@ public class EversoloLibraryService extends Service {
             @Override
             public void onAvailable(Network network) {
                 // 网络已连接并可用
-                // TODO: 2025/12/24
-//                int status = Settings.System.getInt(getContentResolver(), CLING_SETTING_NAME, 0);
-//                if (status == 1) {
-//                    startServer();
-//                }
-                startServer();
+                int status = Settings.System.getInt(getContentResolver(), CLING_SETTING_NAME, 0);
+                if (status == 1) {
+                    startServer();
+                }
             }
 
             @Override

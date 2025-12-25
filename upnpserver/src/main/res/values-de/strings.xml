@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="appName">Droid DLNA</string>
+    <string name="deviceDetails">Geräte-Details</string>
+    <string name="searchLAN">Netzwerk durchsuchen</string>
+    <string name="switchRouter">Netzwerkrouter wechseln</string>
+    <string name="toggleDebugLogging">Debug-Logging umschalten</string>
+    <string name="OK">OK</string>
+    <string name="searchingLAN">Suche nach UPnP-Geräten im Netzwerk&#8230;</string>
+    <string name="enablingRouter">Aktiviere Netzwerkrouter&#8230;</string>
+    <string name="disablingRouter">Deaktiviere Netzwerkrouter&#8230;</string>
+    <string name="errorSwitchingRouter">Fehler beim Wechseln des Routers: </string>
+    <string name="enablingDebugLogging">Aktiviere Debug-Logging&#8230;</string>
+    <string name="disablingDebugLogging">Deaktiviere Debug-Logging&#8230;</string>
+    <string name="deviceDetailsNotYetAvailable">Geräte-Details werden ermittelt, bitte warten.</string>
+    <string name="search_lan">Geräte suchen</string>
+    <string name="toggle_debug_logging">Debug-Logging umschalten</string>
+    <string name="searching_lan">Suche nach UPnP-Geräten im Netzwerk&#8230;</string>
+    <string name="enabling_debug_logging">Aktiviere Debug-Logging&#8230;</string>
+    <string name="disabling_debug_logging">Deaktiviere Debug-Logging&#8230;</string>
+    <string name="registering_demo_device">Registriere UPnP-Gerät&#8230;</string>
+    <string name="create_demo_failed">Erstellen des Geräts fehlgeschlagen, überprüfe das Protokoll!</string>
+    <string name="sear_dmr">Finde DMR</string>
+    <string name="dialog_wait_msg">Laden&#8230;</string>
+    <string name="player_play_msg">Abspielen</string>
+    <string name="player_pause_msg">Pause</string>
+    <string name="ip_get_fail">IP-Adresse konnte nicht abgerufen werden</string>
+
+    <!-- tab -->
+    <string name="device">Gerät</string>
+    <string name="content">Inhalt</string>
+    <string name="control">Konsole</string>
+    <string name="setting">Einstellungen</string>
+
+    <!-- control -->
+    <string name="not_select_dev">Gerät auswählen</string>
+    <string name="get_data_err">Daten konnten nicht abgerufen werden, versuchen Sie es erneut</string>
+    <string name="conn_err">Verbindung konnte nicht hergestellt werden</string>
+    <string name="min_voc">Schon die niedrigste Lautstärke</string>
+    <string name="media_name_def">Medienname</string>
+    <string name="media_name_brief">Medienbeschreibung</string>
+    <string name="media_init_time">00:00:00</string>
+    <string name="media_play_err">Abspielen fehlgeschlagen</string>
+
+    <!-- device -->
+    <string name="device_msg">Medieninhaltsdienst</string>
+    <string name="dmr_msg">Wiedergabe</string>
+    <string name="exit">Drücken Sie erneut, um die Anwendung zu beenden</string>
+
+    <!-- imageDispaly -->
+    <string name="io_error">E/A-Fehler</string>
+    <string name="decoding_error">Fehler beim Dekodieren des Bildes</string>
+    <string name="network_denied">Schleches Netzwerk</string>
+    <string name="oom_error">Bild konnte nicht geladen werden, da es zu groß ist</string>
+    <string name="unknown_error">Unbekannter Fehler</string>
+    <string name="info_first_image">Schon das erste Bild</string>
+    <string name="info_last_image">Schon das letzte Bild</string>
+    <string name="info_image_slide_start">Beginne mit der Bildershow</string>
+    <string name="info_image_slide_pause">Pausiere Bildershow</string>
+    <string name="info_download_image">Bild wurde heruntergeladen nach</string>
+    <string name="info_download_image_error">Speichern des Bildes fehlgeschlagen</string>
+    <string name="info_share_image">Bild teilen</string>
+
+    <!-- player -->
+    <string name="player_bt_return">Zurück</string>
+    <string name="player_exit">Drücken Sie erneut die Rücktaste, um den Player zu beenden</string>
+
+    <!-- setting -->
+    <string name="about_app">Version 2.0.0</string>
+    <string name="open_msg">An</string>
+    <string name="off_msg">Aus</string>
+    <string name="share_content">Medieninhalte teilen</string>
+    <string name="share_content_on">Starten Sie das Teilen von Inhalten, andere Geräte können lokale Mediendateien über das DLNA/UPnP-Protokoll anzeigen</string>
+    <string name="share_content_off">Stoppen Sie das Teilen von Inhalten, andere Geräte können keine lokalen Mediendateien über das DLNA/UPnP-Protokoll anzeigen</string>
+    <string name="share_content_setting">Medieninhalt-Freigabeeinstellungen</string>
+    <string name="share_content_setting_breif">Teilen Sie Ihre bevorzugten Inhalte mit Familie und Freunden</string>
+    <string name="device_name">Gerätename</string>
+    <string name="dms_name">Medien-Servername</string>
+    <string name="dms_name_breif">Lokaler Medien-Servername, den Sie auf anderen Geräten finden können</string>
+    <string name="device_local">DroidDLNA Media Server</string>
+    <string name="player">Medienwiedergabe</string>
+    <string name="player_on">Aktivieren Sie den lokalen Player-Dienst, andere Geräte können Mediendateien über das DLNA/UPnP-Protokoll auf dieses Gerät schieben</string>
+    <string name="player_off">Deaktivieren Sie den lokalen Player-Dienst, andere Geräte können keine Mediendateien über das DLNA/UPnP-Protokoll auf dieses Gerät schieben</string>
+    <string name="player_name">Playername</string>
+    <string name="player_name_breif">Lokaler Playername, den Sie auf anderen Geräten finden können</string>
+    <string name="player_name_local">DroidDLNA Local Render</string>
+    <string name="net_setting">Netzwerkeinstellungen</string>
+    <string name="net_setting_breif">Einrichten und Verwalten von drahtlosen Netzwerkzugangspunkten</string>
+    <string name="slideshow">Diashow</string>
+    <string name="slideshow_breif">Intervall für die Diashow einstellen</string>
+    <string name="thumbnails">Verkleinern-Symbol</string>
+    <string name="thumbnails_breif">Verkleinern-Symbol ausblenden</string>
+    <string name="setting_msg">Einstellungen</string>
+    <string name="about_brief">DroidDLNA ist ein vollwertiger UPnP/DLNA-Steuerpunkt, UPnP-Medienwiedergaber und UPnP-Medien-Server. Diese App basiert auf Cling 2.0, einem UPnP-kompatiblen Software-Stack für Java-Umgebungen.
+ Spielen Sie mühelos Ihre Musik, Videos und Bilder auf Ihrem Telefon und auf Geräten in Ihrem Netzwerk (DLNA-Fernseher, XBMC, WMP, ...), von Ihren externen UPnP-Medien-Servern. Spielen Sie Ihre Telefon/Tablet-Medien auf diese Geräte.</string>
+
+    <!-- Menu -->
+    <string name="menu_exit">Beenden</string>
+
+    <!-- Container Titles -->
+    <string name="container_artists">Künstler</string>
+    <string name="container_album_artists">Album-Künstler</string>
+    <string name="container_albums">Alben</string>
+    <string name="container_composers">Komponisten</string>
+    <string name="container_genres">Genres</string>
+
+</resources>

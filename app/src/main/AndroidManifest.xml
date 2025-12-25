@@ -1,9 +1,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     package="com.zxt.dlna"
+    android:sharedUserId="android.uid.system"
     android:versionCode="2"
     android:versionName="2.0">
-  
+
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE" />
@@ -26,8 +27,7 @@
         <!--透明Activity作为应用入口点，解决Android Studio无法运行无界面应用的问题-->
         <activity
             android:name="com.zxt.dlna.activity.TransparentEntryActivity"
-            android:exported="true"
-            android:theme="@style/TransparentTheme">
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />

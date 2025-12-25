@@ -28,15 +28,12 @@ public class EversoloLibraryReceiver extends BroadcastReceiver {
         String action = intent.getAction();
         Log.d(TAG, "Received broadcast: " + action);
         status = Settings.System.getInt(context.getContentResolver(),CLING_SETTING_NAME,0);
-        // TODO: 2025/12/24  
-//        if (status == 0){
-//            return;
-//        }
         Intent serviceIntent = new Intent(context, EversoloLibraryService.class);
         
         switch (action) {
             case ACTION_START_SERVER:
                 // 启动服务
+
                 context.startService(serviceIntent);
                 Log.d(TAG, "Service started");
                 break;

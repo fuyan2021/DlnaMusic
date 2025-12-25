@@ -1,0 +1,88 @@
+plugins {
+    id 'com.android.application'
+}
+Properties properties = new Properties()
+properties.load(project.rootProject.file('local.properties').newDataInputStream())
+def keystoreFilepath = properties.getProperty("storeFile")
+def keystorePassword = properties.getProperty("storePassword")
+def alias = properties.getProperty("keyAlias")
+def aliasPassword = properties.getProperty("keyPassword")
+def keyStoreFile = file(keystoreFilepath)
+
+android {
+    signingConfigs {
+        release {
+            keyAlias alias
+            keyPassword aliasPassword
+            storeFile keyStoreFile
+            storePassword keystorePassword
+        }
+        debug {
+            keyAlias alias
+            keyPassword aliasPassword
+            storeFile keyStoreFile
+            storePassword keystorePassword
+        }
+    }
+
+    namespace 'com.eversolo.upnpserver.dlna'
+    compileSdkVersion 22
+
+    defaultConfig {
+        applicationId "com.eversolo.upnpserver.dlna"
+        minSdkVersion 21
+        targetSdkVersion 21
+        versionCode 1
+        versionName "1.0"
+
+        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            debuggable true
+            if (keyStoreFile) {
+                signingConfig signingConfigs.release
+            }
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+}
+
+dependencies {
+    implementation 'com.squareup.okhttp3:okhttp:4.9.1'
+
+    compile 'com.android.support:appcompat-v7:22.2.0'
+    compile 'com.android.support:design:22.2.0'
+    compile 'com.android.support:cardview-v7:22.2.0'
+    compile 'com.android.support:recyclerview-v7:22.2.0'
+    compile files('libs/cdi-api.jar')
+    compile files('libs/http-2.2.1.jar')
+    compile files('libs/httpclient-4.2.2.jar')
+    compile files('libs/httpcore-4.2.3.jar')
+    compile files('libs/javax.annotation_1.0.jar')
+    compile files('libs/javax.inject.jar')
+    compile files('libs/javax.servlet-3.0.0.v201103241009.jar')
+    compile files('libs/jetty-client-8.1.9.v20130131.jar')
+    compile files('libs/jetty-continuation-8.1.9.v20130131.jar')
+    compile files('libs/jetty-http-8.1.9.v20130131.jar')
+    compile files('libs/jetty-io-8.1.9.v20130131.jar')
+    compile files('libs/jetty-security-8.1.9.v20130131.jar')
+    compile files('libs/jetty-server-8.1.9.v20130131.jar')
+    compile files('libs/jetty-servlet-8.1.9.v20130131.jar')
+    compile files('libs/jetty-util-8.1.9.v20130131.jar')
+    compile files('libs/seamless-http-1.0-alpha2.jar')
+    compile files('libs/seamless-util-1.0-alpha2.jar')
+    compile files('libs/seamless-xml-1.0-alpha2.jar')
+    compile files('libs/slf4j-api-1.6.1.jar')
+    compile files('libs/slf4j-jdk14-1.6.1.jar')
+    compile files('libs/universal-image-loader-1.8.4-with-sources.jar')
+    implementation 'com.google.code.gson:gson:2.10.1'
+    testImplementation 'junit:junit:4.12'
+    testImplementation 'org.mockito:mockito-core:1.10.19'
+}
